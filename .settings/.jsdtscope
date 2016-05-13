@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="jsdoc-toolkit/app/handlers/XMLDOC/|src/tinySIP/src/|src/tinyMEDIA/src/|jsdoc-toolkit/app/frame/|jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static/google-code-prettify/|src/tinySDP/src/headers/|jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/extends/|jsdoc-toolkit/app/t/|jsdoc-toolkit/app/lib/|src/tinySIP/src/dialogs/|jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/|jsdoc-toolkit/templates/codeview/javascript/|jsdoc-toolkit/app/plugins/|release/assets/js/|assets/js/|src/tinySIP/src/parsers/|jsdoc-toolkit/templates/codeview/|assets/js/google-code-prettify/|src/tinySIP/src/headers/|jsdoc-toolkit/app/lib/JSDOC/|jsdoc-toolkit/app/test/scripts/|src/tinySIP/src/authentication/|jsdoc-toolkit/app/|jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static/bootstrap/js/|src/|release/assets/js/google-code-prettify/|src/tinySAK/src/|jsdoc-toolkit/app/test/|src/tinySIP/src/api/|src/tinySDP/src/|src/tinySIP/src/transports/|jsdoc-toolkit/templates/jsdoc/|jsdoc-toolkit/app/handlers/|release/|jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static/|src/tinySIP/src/transactions/" kind="src" path=""/>
+	<classpathentry excluding="google-code-prettify/" kind="src" path="assets/js"/>
+	<classpathentry kind="src" path="assets/js/google-code-prettify"/>
+	<classpathentry excluding="handlers/XMLDOC/|frame/|t/|lib/|plugins/|lib/JSDOC/|test/scripts/|test/|handlers/" kind="src" path="jsdoc-toolkit/app"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/frame"/>
+	<classpathentry excluding="XMLDOC/" kind="src" path="jsdoc-toolkit/app/handlers"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/handlers/XMLDOC"/>
+	<classpathentry excluding="JSDOC/" kind="src" path="jsdoc-toolkit/app/lib"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/lib/JSDOC"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/plugins"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/t"/>
+	<classpathentry excluding="scripts/" kind="src" path="jsdoc-toolkit/app/test"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/app/test/scripts"/>
+	<classpathentry excluding="javascript/" kind="src" path="jsdoc-toolkit/templates/codeview"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/templates/codeview/javascript"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/templates/jsdoc"/>
+	<classpathentry excluding="static/google-code-prettify/|extends/|static/bootstrap/js/|static/" kind="src" path="jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/extends"/>
+	<classpathentry excluding="google-code-prettify/|bootstrap/js/" kind="src" path="jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static/bootstrap/js"/>
+	<classpathentry kind="src" path="jsdoc-toolkit/templates/OrgaChem-JsDoc2-Template-Bootstrap/static/google-code-prettify"/>
+	<classpathentry excluding="assets/js/|assets/js/google-code-prettify/" kind="src" path="release"/>
+	<classpathentry excluding="google-code-prettify/" kind="src" path="release/assets/js"/>
+	<classpathentry kind="src" path="release/assets/js/google-code-prettify"/>
+	<classpathentry excluding="tinySIP/src/|tinyMEDIA/src/|tinySDP/src/headers/|tinySIP/src/dialogs/|tinySIP/src/parsers/|tinySIP/src/headers/|tinySIP/src/authentication/|tinySAK/src/|tinySIP/src/api/|tinySDP/src/|tinySIP/src/transports/|tinySIP/src/transactions/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src/tinyMEDIA/src"/>
+	<classpathentry kind="src" path="src/tinySAK/src"/>
+	<classpathentry excluding="headers/" kind="src" path="src/tinySDP/src"/>
+	<classpathentry kind="src" path="src/tinySDP/src/headers"/>
+	<classpathentry excluding="dialogs/|parsers/|headers/|authentication/|api/|transports/|transactions/" kind="src" path="src/tinySIP/src"/>
+	<classpathentry kind="src" path="src/tinySIP/src/api"/>
+	<classpathentry kind="src" path="src/tinySIP/src/authentication"/>
+	<classpathentry kind="src" path="src/tinySIP/src/dialogs"/>
+	<classpathentry kind="src" path="src/tinySIP/src/headers"/>
+	<classpathentry kind="src" path="src/tinySIP/src/parsers"/>
+	<classpathentry kind="src" path="src/tinySIP/src/transactions"/>
+	<classpathentry kind="src" path="src/tinySIP/src/transports"/>
+	<classpathentry kind="con" path="org.eclipse.wst.jsdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path=""/>
+</classpath>

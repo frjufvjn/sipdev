@@ -1,0 +1,776 @@
+﻿<!DOCTYPE html>
+<!--
+* Copyright (C) 2012-2016 Doubango Telecom <http://www.doubango.org>
+* License: BSD
+* This file is part of Open Source sipML5 solution <http://www.sipml5.org>
+-->
+<html>
+<!-- head -->
+<head>
+    <meta charset="utf-8" />
+    <title>Hansol Contact Center</title>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
+    <!--<script src="SIPml-api.js?svn=250" type="text/javascript"> </script>-->
+
+    <!-- Styles -->
+    <link href="./assets/css/bootstrap.css" rel="stylesheet" />
+    <style type="text/css">
+        body {
+            padding-top: 80px;
+            padding-bottom: 40px;
+        }
+
+        .navbar-inner-red {
+            background-color: #600000;
+            background-image: none;
+            background-repeat: no-repeat;
+            filter: none;
+        }
+
+        .full-screen {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .normal-screen {
+            position: relative;
+        }
+
+        .call-options {
+            padding: 5px;
+            background-color: #f0f0f0;
+            border: 1px solid #eee;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            -webkit-transition-property: opacity;
+            -moz-transition-property: opacity;
+            -o-transition-property: opacity;
+            -webkit-transition-duration: 2s;
+            -moz-transition-duration: 2s;
+            -o-transition-duration: 2s;
+        }
+
+        .tab-video,
+        .div-video {
+            width: 100%;
+            height: 0px;
+            -webkit-transition-property: height;
+            -moz-transition-property: height;
+            -o-transition-property: height;
+            -webkit-transition-duration: 2s;
+            -moz-transition-duration: 2s;
+            -o-transition-duration: 2s;
+        }
+
+        .label-align {
+            display: block;
+            padding-left: 15px;
+            text-indent: -15px;
+        }
+
+        .input-align {
+            width: 13px;
+            height: 13px;
+            padding: 0;
+            margin: 0;
+            vertical-align: bottom;
+            position: relative;
+            top: -1px;
+            *overflow: hidden;
+        }
+
+        .glass-panel {
+            z-index: 99;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            top: 0;
+            left: 0;
+            opacity: 0.8;
+            background-color: Gray;
+        }
+
+        .div-keypad {
+            z-index: 100;
+            position: fixed;
+            -moz-transition-property: left top;
+            -o-transition-property: left top;
+            -webkit-transition-duration: 2s;
+            -moz-transition-duration: 2s;
+            -o-transition-duration: 2s;
+        }
+
+		.well {
+		}
+
+        .previewvideo {
+            position: absolute;
+            width: 88px;
+            height: 72px;
+            margin-top: -42px;
+        }
+    </style>
+    <link href="./assets/css/bootstrap-responsive.css" rel="stylesheet" />
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="./assets/ico/favicon.ico" />
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="./assets/ico/apple-touch-icon-114-precomposed.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="./assets/ico/apple-touch-icon-72-precomposed.png" />
+    <link rel="apple-touch-icon-precomposed" href="./assets/ico/apple-touch-icon-57-precomposed.png" />
+    
+    <!-- linphone library -->
+    <script type="text/javascript" src="./linphone/utils.js"></script>
+    <!-- Javascript code -->
+    <script type="text/javascript">
+
+        var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister;
+
+        window.onload = function () {
+
+            btnRegister.disabled = false;
+            document.body.style.cursor = 'default';
+
+            // Initialize call button
+            uiBtnCallSetText("Call");
+
+            // is using sip.linphone.org accout
+            gIsSimpleRegister = false;
+
+            if( !gIsSimpleRegister ) {
+                gServerAddr = '10.1.15.130';
+                gProxyServerAddr = 'cube-x19.hansol.com';
+                gIsOutbandProxy = true;
+                gTransportType = 0;
+            } else {
+                gServerAddr = 'sip.linphone.org';
+                gProxyServerAddr = 'sip.linphone.org';
+                gIsOutbandProxy = true;
+                gTransportType = 0;
+            }
+            
+        };
+
+        /* return the core object */
+        function getCore(){
+            return document.getElementById('core');
+        }
+
+        function sipRegister()
+        {
+            if( !txtDisplayName.value || !txtPassword.value ) {
+                updateStatus('txtRegStatus','<b>Not a valid Public identity</b>');
+                return;
+            }
+
+            var username = txtDisplayName.value;
+            var password = txtPassword.value;
+            var server = gServerAddr; /* proxy server */
+            var domain = gProxyServerAddr; /* domain */
+
+            var core = getCore();
+
+            /*create proxy config*/         
+            var proxyConfig = core.newProxyConfig();
+            
+            /*create authentication structure from identity*/
+            var authinfo = core.newAuthInfo(username, null,password,null,null);
+            
+            /*add authentication info to LinphoneCore*/
+            core.addAuthInfo(authinfo);
+            
+            /*configure proxy entries*/
+            var account = username;
+            var password = password;
+            
+            var proxy = server;
+            var address = core.newAddress(proxyConfig.identity);
+            address.username = account;
+
+            address.domain = domain;
+            proxyConfig.identity = address.asString();
+
+            if (proxy !== null && proxy !== '') {
+                if( !gIsSimpleRegister ) {
+                    proxyConfig.serverAddr = proxy;
+                } else {
+                    proxyConfig.serverAddr = domain;
+                }
+            } else {
+                proxyConfig.serverAddr = domain;
+            }
+            
+            address = core.newAddress(proxyConfig.serverAddr);
+            address.transport = 0; // linphone.TransportType.Udp;
+            
+            proxyConfig.serverAddr = address.asString();
+            proxyConfig.route = proxyConfig.serverAddr;
+
+            var ret = core.addProxyConfig(proxyConfig);
+            if( ret === 0 ) {
+                if( gIsOutbandProxy ) {
+                    updateStatus('txtRegStatus','<b>core.addProxyConfig success !!</b>');
+                    core.defaultProxy = proxyConfig;   
+                }
+            } else {
+                updateStatus('txtRegStatus','<b>Login Failed !!</b>');
+            }
+        }
+
+        function sipUnRegister()
+        {
+            
+        }
+
+        /* Basic call */
+        function call(addressStr){
+            var core = getCore();
+            
+            /*Create a new address with the paramaters*/
+            var address = core.newAddress(addressStr);
+            if(address !== null) {
+                /* Start the call with the contact address*/
+                core.inviteAddress(address);
+                console.log("Call: " + address.asString());
+            }
+        }
+            
+        function loadCore(){
+            var core = getCore();
+            core.init();
+                
+            /* Add callback for registration and call state */
+            addEvent(core,"callStateChanged",onCallStateChanged);
+            addEvent(core,"registrationStateChanged",onRegistrationStateChanged);
+               
+            /* Display logs information in the console */
+            core.logHandler = function(level, message) {
+                window.console.log(message);
+            }
+            
+            /* Start main loop for receiving notifications and doing background linphonecore work */
+            core.iterateEnabled = true;
+        }
+            
+        /* Callback that display call states */
+        function onCallStateChanged(event, call, state, message){
+            updateStatus('txtRegStatus',message);
+            console.log(message);
+
+            /*
+                Idle                number  0   Initial call state
+                IncomingReceived    number  1   This is a new incoming call
+                OutgoingInit        number  2   An outgoing call is started
+                OutgoingProgress    number  3   An outgoing call is in progress
+                OutgoingRinging     number  4   An outgoing call is ringing at remote end
+                OutgoingEarlyMedia  number  5   An outgoing call is proposed early media
+                Connected           number  6   Connected, the call is answered
+                StreamsRunning      number  7   The media streams are established and running
+                Pausing             number  8   The call is pausing at the initiative of local end
+                Paused              number  9   The call is paused, remote end has accepted the pause
+                Resuming            number  10  The call is being resumed by local end
+                Refered             number  11  The call is being transfered to another party, resulting in a new outgoing call to follow immediately
+                Error               number  12  The call encountered an error
+                End                 number  13  The call ended normally
+                PausedByRemote      number  14  The call is paused by remote end
+                UpdatedByRemote     number  15  The call's parameters change is requested by remote end, used for example when video is added by remote
+                IncomingEarlyMedia  number  16  We are proposing early media to an incoming call
+                Updating            number  17  A call update has been initiated by us
+                Released            number  18  The call object is no more retained by the core
+                EarlyUpdatedByRemote    number  19  
+                EarlyUpdating       number  20  
+            */
+            switch ( state ) {
+                case 1 :
+                    {
+                        break;
+                    }
+                default :
+                    {
+                        break;
+                    }
+            }
+        }
+
+        function onRegistrationStateChanged(event, proxy, state, message){
+            updateStatus('txtRegStatus',message);
+            console.log(message);
+
+            /*
+                None        number  0   Initial state for registrations
+                Progress    number  1   Registration is in progress
+                Ok          number  2   Registration is successful
+                Cleared     number  3   Unregistration succeeded
+                Failed      number  4   Registration failed
+            */
+            switch ( state ) {
+                case 2 :
+                    {
+                        uiOnConnectionEvent(true, false);
+                        uiBtnCallSetText("Call");
+                        break;
+                    }
+                default :
+                    {
+                        break;
+                    }
+            }
+        }
+        
+        /* Handler function */
+        function onRegistration(form1){
+            registration(document.form1.username.value,document.form1.password.value,document.form1.address.value);
+        }
+        
+        function onCall(form2){
+            call(document.form2.address.value);
+        }
+
+        // makes a call (SIP INVITE)
+        function sipCall(s_type) {
+            if( !txtPhoneNumber.value ) {
+                txtCallStatus.innerHTML = '<b>invalid target number !!</b>';
+                return;
+            }
+
+            $("#confirmModal").modal("hide");
+            btnCall.disabled = true;
+            btnHangUp.disabled = false;
+
+            var addressStr = 'sip:' + txtPhoneNumber.value + '@' + gServerAddr;
+            txtCallStatus.innerHTML = '<i>Calling...</i>';
+            
+            call(addressStr);
+        }
+
+        function uiOnConnectionEvent(b_connected, b_connecting) { // should be enum: connecting, connected, terminating, terminated
+            btnRegister.disabled = b_connected || b_connecting;;
+            btnUnRegister.disabled = !b_connected && !b_connecting;
+            btnCall.disabled = false;
+            btnHangUp.disabled = false;
+        }
+
+        function uiBtnCallSetText(s_text) {
+            switch (s_text) {
+                case "Call":
+                    {
+                        var bDisableCallBtnOptions = (window.localStorage && window.localStorage.getItem('org.doubango.expert.disable_callbtn_options') == "true");
+                        btnCall.value = btnCall.innerHTML = bDisableCallBtnOptions ? 'Call' : 'Call <span id="spanCaret" class="caret">';
+                        btnCall.setAttribute("class", bDisableCallBtnOptions ? "btn btn-primary" : "btn btn-primary dropdown-toggle");
+                        btnCall.onclick = bDisableCallBtnOptions ? function () { sipCall(bDisableVideo ? 'call-audio' : 'call-audiovideo'); } : null;
+                        ulCallOptions.style.visibility = bDisableCallBtnOptions ? "hidden" : "visible";
+                        if (!bDisableCallBtnOptions && ulCallOptions.parentNode != divBtnCallGroup) {
+                            divBtnCallGroup.appendChild(ulCallOptions);
+                        }
+                        else if (bDisableCallBtnOptions && ulCallOptions.parentNode == divBtnCallGroup) {
+                            document.body.appendChild(ulCallOptions);
+                        }
+
+                        break;
+                    }
+                default:
+                    {
+                        btnCall.value = btnCall.innerHTML = s_text;
+                        btnCall.setAttribute("class", "btn btn-primary");
+                        btnCall.onclick = function () { sipCall(bDisableVideo ? 'call-audio' : 'call-audiovideo'); };
+                        ulCallOptions.style.visibility = "hidden";
+                        if (ulCallOptions.parentNode == divBtnCallGroup) {
+                            document.body.appendChild(ulCallOptions);
+                        }
+                        break;
+                    }
+            }
+        }
+        
+    </script>
+</head>
+<body>
+
+	<!-- linphone object -->
+	<object id="core" type="application/x-linphone-web" width="0" height="0">
+		<param name="onload" value='loadCore'>
+	</object>
+
+	<div class="navbar navbar-fixed-top">
+		<div id="divNavbarInner">
+			<div class="container">
+				<a class="btn btn-navbar" data-toggle="collapse"
+					data-target=".nav-collapse"> <span class="icon-bar"></span><span
+					class="icon-bar"></span><span class="icon-bar"></span>
+				</a> <img alt="sipML5" class="brand" src="./images/hansol.gif"
+					style="margin-top: 15px;" />
+				<!--/.nav-collapse -->
+			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div class="row-fluid">
+			<div class="span4 well">
+
+				<div>
+					<label style="width: 100%;" align="center" id="txtRegStatus">
+					</label>
+					<!--	<img src="./images/gieup.png" width="100%" style="margin-bottom:10px;"> -->
+
+					<div class="media" id=userInfo style="display: none;">
+						<div class="media-left media-middle pull-left"
+							style="padding-right: 15px;">
+							<a href="#"> <img class="media-object img-rounded"
+								src="./images/gieup.png" alt="..." width="128px" height="128px">
+							</a>
+						</div>
+						<div class="media-body">
+							<h4 class="media-heading">한솔PNS/인티큐브</h4>
+							<p>
+								장기업 (Chang Gie Up)<br> SE팀 / 과장<br> Tel: 02-6005-3987<br>
+								Mobile: 010-4809-0749
+							</p>
+							<br> <br> <br> <strong style="color: darkgreen;">[최근통화]</strong><br>
+							<span style="color: gray;">2016.3.27 음성통화 010-4481-2905
+								(13:27) </span><br> <span style="color: gray;">2016.4.17
+								영상통화 010-7712-3157 (06:32) </span><br>
+						</div>
+
+					</div>
+
+
+					<div class="media" id=userInfo2 style="display: none;">
+						<div class="media-left media-middle pull-left"
+							style="padding-right: 15px;">
+							<a href="#"> <img class="media-object img-rounded"
+								src="./images/yjlee.png" alt="..." width="128px" height="128px">
+							</a>
+						</div>
+						<div class="media-body">
+							<h4 class="media-heading">한솔PNS/인티큐브</h4>
+							<p>
+								이유진 (Lee Yu Jin)<br> SE팀 / 대리<br> Tel: 02-6005-4921<br>
+								Mobile: 010-7421-4892
+							</p>
+							<br> <br> <br> <strong style="color: darkgreen;">[최근통화]</strong><br>
+							<span style="color: gray;">2016.3.27 영상통화 010-4481-2905
+								(13:27) </span><br>
+						</div>
+
+					</div>
+
+
+				</div>
+				<div id=loginInfo>
+					<label style="width: 100%;" align="center" id="txtRegStatus">
+					</label>
+					<h2>Login</h2>
+					<br />
+					<table style='width: 100%'>
+						<tr>
+							<td><label style="height: 100%"> Identity<!--Display Name:-->
+							</label></td>
+							<td><input type="text" style="width: 100%; height: 100%"
+								id="txtDisplayName" value="" placeholder="" /></td>
+						</tr>
+						<tr>
+							<td><label style="height: 100%">Password</label></td>
+							<td><input type="password" style="width: 100%; height: 100%"
+								id="txtPassword" value="" /></td>
+						</tr>
+						<tr>
+							<td colspan="2" align="right"><input type="button"
+								class="btn btn-success" id="btnRegister" value="LogIn" disabled
+								onclick='sipRegister();' /> <input type="button"
+								class="btn btn-danger" id="btnUnRegister" value="LogOut"
+								disabled onclick='sipUnRegister();' /></td>
+						</tr>
+						<!--<tr>
+                        <td colspan="3">
+                            <a class="btn" href="./expert.htm" target="_blank">Setting</a>
+                        </td>
+                    </tr>-->
+						<!-- jw: hidden  -->
+
+						<!--<tr>
+                        <td colspan="3">
+                            <p class="small"><sup>*</sup> <i>Mandatory Field</i></p>
+                        </td>
+                    </tr>-->
+						<!--<tr>
+                        <td colspan="3">
+                            <a class="btn" href="http://code.google.com/p/sipml5/wiki/Public_SIP_Servers" target="_blank">Need SIP account?</a>
+                        </td>
+                    </tr>-->
+
+					</table>
+				</div>
+			</div>
+			<div id="divCallCtrl" class="span7 well"
+				style='display: table-cell; vertical-align: middle'>
+				<label style="width: 100%;" align="center" id="txtCallStatus">
+				</label>
+				<h2>Call control</h2>
+				<br />
+				<table style='width: 100%;'>
+					<tr>
+						<td style="white-space: nowrap;"><input type="text"
+							style="width: 100%; height: 100%;" id="txtPhoneNumber" value=""
+							placeholder="Enter phone number to call" /></td>
+					</tr>
+					<tr>
+						<td colspan="1" align="right">
+							<div class="btn-toolbar"
+								style="margin: 0; vertical-align: middle">
+								<!--div class="btn-group">
+                                    <input type="button" id="btnBFCP" style="margin: 0; vertical-align:middle; height: 100%;" class="btn btn-primary" value="BFCP" onclick='sipShareScreen();' disabled />
+                                </div-->
+								<div id="divBtnCallGroup" class="btn-group">
+									<button id="btnCall" disabled class="btn btn-primary"
+										data-toggle="dropdown">Call</button>
+								</div>
+								&nbsp;&nbsp;
+								<div class="btn-group">
+									<input type="button" id="btnHangUp"
+										style="margin: 0; vertical-align: middle; height: 100%;"
+										class="btn btn-primary" value="HangUp" onclick='sipHangUp();'
+										disabled />
+								</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td id="tdVideo" class='tab-video'>
+							<div id="divVideo" class='div-video'>
+								<div id="divVideoRemote"
+									style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
+									<!--<video class="video" width="100%" height="100%" id="video_remote" autoplay="autoplay" style="opacity: 0;
+                                        background-color: #000000; -webkit-transition-property: opacity; -webkit-transition-duration: 2s;"></video>-->
+								</div>
+
+								<div id="divVideoLocalWrapper"
+									style="margin-left: 0px; border: 0px solid #009; z-index: 1000">
+									<iframe class="previewvideo"
+										style="border: 0px solid #009; z-index: 1000"> </iframe>
+									<!--<div id="divVideoLocal" class="previewvideo" style=' border:0px solid #009; z-index: 1000'>
+                                        <video class="video" width="100%" height="100%" id="video_local" autoplay="autoplay" muted="true" style="opacity: 0;
+                                            background-color: #000000; -webkit-transition-property: opacity;
+                                            -webkit-transition-duration: 2s;"></video>
+                                    </div>-->
+								</div>
+								<div id="divScreencastLocalWrapper"
+									style="margin-left: 90px; border: 0px solid #009; z-index: 1000">
+									<iframe class="previewvideo"
+										style="border: 0px solid #009; z-index: 1000"> </iframe>
+									<div id="divScreencastLocal" class="previewvideo"
+										style='border: 0px solid #009; z-index: 1000'></div>
+								</div>
+								<!--div id="div1" style="margin-left: 300px; border:0px solid #009; z-index: 1000">
+                                    <iframe class="previewvideo" style="border:0px solid #009; z-index: 1000"> </iframe>
+                                    <div id="div2" class="previewvideo" style='border:0px solid #009; z-index: 1000'>
+                                      <input type="button" class="btn" style="" id="Button1" value="Button1" /> &nbsp;
+                                      <input type="button" class="btn" style="" id="Button2" value="Button2" /> &nbsp;
+                                    </div>
+                                </div-->
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td align='center'>
+							<div id='divCallOptions' class='call-options'
+								style='opacity: 0; margin-top: 0px'>
+								<input type="button" class="btn" style="" id="btnFullScreen"
+									value="FullScreen" disabled onclick='toggleFullScreen();' />
+								&nbsp; <input type="button" class="btn" style="" id="btnMute"
+									value="Mute" onclick='sipToggleMute();' /> &nbsp; <input
+									type="button" class="btn" style="" id="btnHoldResume"
+									value="Hold" onclick='sipToggleHoldResume();' /> &nbsp; <input
+									type="button" class="btn" style="" id="btnTransfer"
+									value="Transfer" onclick='sipTransfer();' /> &nbsp; <input
+									type="button" class="btn" style="" id="btnKeyPad"
+									value="KeyPad" onclick='openKeyPad();' />
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+
+		<br />
+		<footer>
+
+			<p>
+				&copy; Hansol Inticube 2016 <br /> <i>Inspiring the future</i>
+			</p>
+			<!-- Creates all ATL/COM objects right now
+                Will open confirmation dialogs if not already done
+            -->
+			<!--object id="fakeVideoDisplay" classid="clsid:5C2C407B-09D9-449B-BB83-C39B7802A684" style="visibility:hidden;"> </object-->
+			<!--object id="fakeLooper" classid="clsid:7082C446-54A8-4280-A18D-54143846211A" style="visibility:visible; width:0px; height:0px"> </object-->
+			<!--object id="fakeSessionDescription" classid="clsid:DBA9F8E2-F9FB-47CF-8797-986A69A1CA9C" style="visibility:hidden;"> </object-->
+			<!--object id="fakeNetTransport" classid="clsid:5A7D84EC-382C-4844-AB3A-9825DBE30DAE" style="visibility:hidden;"> </object-->
+			<!--object id="fakePeerConnection" classid="clsid:56D10AD3-8F52-4AA4-854B-41F4D6F9CEA3" style="visibility:hidden;"> </object-->
+			<!--<object id="fakePluginInstance" classid="clsid:69E4A9D1-824C-40DA-9680-C7424A27B6A0" style="visibility:hidden;"> </object>-->
+
+			<!--
+                NPAPI  browsers: Safari, Opera and Firefox
+            -->
+			<!--embed id="WebRtc4npapi" type="application/w4a" width='1' height='1' style='visibility:hidden;' /-->
+		</footer>
+	</div>
+	<!-- /container -->
+	<!-- Glass Panel -->
+	<div id='divGlassPanel' class='glass-panel' style='visibility: hidden'></div>
+	<!-- KeyPad Div -->
+	<div id='divKeyPad' class='span2 well div-keypad'
+		style="left: 0px; top: 0px; width: 250; height: 240; visibility: hidden">
+		<table style="width: 100%; height: 100%">
+			<tr>
+				<td><input type="button" style="width: 33%" class="btn"
+					value="1" onclick="sipSendDTMF('1');" /><input type="button"
+					style="width: 33%" class="btn" value="2"
+					onclick="sipSendDTMF('2');" /><input type="button"
+					style="width: 33%" class="btn" value="3"
+					onclick="sipSendDTMF('3');" /></td>
+			</tr>
+			<tr>
+				<td><input type="button" style="width: 33%" class="btn"
+					value="4" onclick="sipSendDTMF('4');" /><input type="button"
+					style="width: 33%" class="btn" value="5"
+					onclick="sipSendDTMF('5');" /><input type="button"
+					style="width: 33%" class="btn" value="6"
+					onclick="sipSendDTMF('6');" /></td>
+			</tr>
+			<tr>
+				<td><input type="button" style="width: 33%" class="btn"
+					value="7" onclick="sipSendDTMF('7');" /><input type="button"
+					style="width: 33%" class="btn" value="8"
+					onclick="sipSendDTMF('8');" /><input type="button"
+					style="width: 33%" class="btn" value="9"
+					onclick="sipSendDTMF('9');" /></td>
+			</tr>
+			<tr>
+				<td><input type="button" style="width: 33%" class="btn"
+					value="*" onclick="sipSendDTMF('*');" /><input type="button"
+					style="width: 33%" class="btn" value="0"
+					onclick="sipSendDTMF('0');" /><input type="button"
+					style="width: 33%" class="btn" value="#"
+					onclick="sipSendDTMF('#');" /></td>
+			</tr>
+			<tr>
+				<td colspan=3><input type="button" style="width: 100%"
+					class="btn btn-medium btn-danger" value="close"
+					onclick="closeKeyPad();" /></td>
+			</tr>
+		</table>
+	</div>
+	<!-- Call button options -->
+	<ul id="ulCallOptions" class="dropdown-menu" style="visibility: hidden">
+		<li><a href="#" onclick='sipCall("call-audio");'>Audio</a></li>
+		<li><a href="#" onclick='sipCall("call-audiovideo");'>Video</a></li>
+		<li id='liScreenShare'><a href="#" onclick='sipShareScreen();'>Screen
+				Share</a></li>
+		<li class="divider"></li>
+		<li><a href="#" onclick='uiDisableCallOptions();'><b>Disable
+					these options</b></a></li>
+	</ul>
+	<!--  jw: hidden here -->
+	<div style="visibility: hidden">
+		<table>
+			<tr style="visibility: hidden">
+				<td><label style="height: 100%"> Private Identity<sup>*</sup>:
+				</label></td>
+				<td><input type="text" style="width: 100%; height: 100%"
+					id="txtPrivateIdentity" value="" placeholder="e.g. +33600000000" />
+				</td>
+			</tr>
+			<tr style="visibility: hidden">
+				<td><label style="height: 100%"> Public Identity<sup>*</sup>:
+				</label></td>
+				<td><input type="text" style="width: 100%; height: 100%"
+					id="txtPublicIdentity" value=""
+					placeholder="e.g. sip:+33600000000@hansol.com" /></td>
+			</tr>
+			<tr style="visibility: hidden">
+				<td><label style="height: 100%">Realm<sup>*</sup>:
+				</label></td>
+				<td><input type="text" style="width: 100%; height: 100%"
+					id="txtRealm" value="" placeholder="e.g. hansol.com" /></td>
+			</tr>
+		</table>
+	</div>
+
+	<!-- Confirm Modal -->
+	<div class="container-fluid">
+		<div class="modal fade" id="confirmModal" role="dialog" tabindex="-1">
+			<div class="modal-dialog modal-sm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"
+							aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+						<h4 class="modal-title">CALLING</h4>
+					</div>
+					<br>
+					<div class="modal-body text-center">
+						<p class="msg">전화를 받으시겠습니까?</p>
+						<br>
+						<button type="button" id=confirmOK class="btn btn-primary btn-sm"
+							onclick="sipCall(bDisableVideo ? 'call-audio' : 'call-audiovideo');">YES</button>
+						<button type="button" id=confirmNO class="btn btn-default btn-sm"
+							data-dismiss="modal">NO</button>
+					</div>
+					<br>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- container -->
+
+
+
+
+	<!-- Le javascript
+    ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script type="text/javascript" src="./assets/js/jquery.js"></script>
+	<script type="text/javascript"
+		src="./assets/js/bootstrap-transition.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-alert.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-modal.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-dropdown.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-scrollspy.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-tab.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-tooltip.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-popover.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-button.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-collapse.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-carousel.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-typeahead.js"></script>
+
+	<!-- Audios -->
+	<!--<audio id="audio_remote" autoplay="autoplay"> </audio>
+    <audio id="ringtone" loop src="sounds/ringtone.wav"> </audio>
+    <audio id="ringbacktone" loop src="sounds/ringbacktone.wav"> </audio>
+    <audio id="dtmfTone" src="sounds/dtmf.wav"> </audio>-->
+
+	<!-- GOOGLE ANALYTICS -->
+	<!--<script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>-->
+
+	<!--<script type="text/javascript">
+        try {
+            var pageTracker = _gat._getTracker("UA-6868621-19");
+            pageTracker._trackPageview();
+        } catch (err) { }
+    </script>-->
+
+</body>
+</html>
