@@ -8,6 +8,13 @@
 <!-- head -->
 <head>
     <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+ 
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script type='text/javascript' src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+      <script type='text/javascript' src="http://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.js"></script>
+    <![endif]-->
     <title>Hansol Contact Center</title>
     <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
     <!--<script src="SIPml-api.js?svn=250" type="text/javascript"> </script>-->
@@ -130,10 +137,13 @@
     
     <!-- linphone library -->
     <script type="text/javascript" src="./linphone/utils.js"></script>
+    <!--<script type="text/javascript" src="./linphone/core.js"></script>-->
+    <!--<script type="text/javascript" src="./linphone/ui/core.js"></script>-->
     <!-- Javascript code -->
     <script type="text/javascript">
 
         var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister;
+        var oCall;
 
         window.onload = function () {
 
@@ -144,7 +154,7 @@
             uiBtnCallSetText("Call");
 
             // is using sip.linphone.org accout
-            gIsSimpleRegister = false;
+            gIsSimpleRegister = true;
 
             if( !gIsSimpleRegister ) {
                 gServerAddr = '10.1.15.130';
@@ -157,11 +167,11 @@
                 gIsOutbandProxy = true;
                 gTransportType = 0;
             }
-            
+
         };
 
         /* return the core object */
-        function getCore(){
+        function getCore() {
             return document.getElementById('core');  
         }
 
@@ -210,7 +220,7 @@
             }
             
             address = core.newAddress(proxyConfig.serverAddr);
-            address.transport = 0; // linphone.TransportType.Udp;
+            address.transport = gTransportType; // linphone.TransportType.Udp;
             
             proxyConfig.serverAddr = address.asString();
             proxyConfig.route = proxyConfig.serverAddr;
@@ -228,7 +238,21 @@
 
         function sipUnRegister()
         {
-            
+            try{
+                var core = getCore();
+                var ret = core.uninit();
+                if( ret == 0 ) {
+                    updateStatus('txtRegStatus','<b>LogOut success !!</b>');
+                    
+                    uiOnConnectionEvent(false,false);
+                    //uiBtnCallSetText("");
+                } else {
+                    updateStatus('txtRegStatus','<b>LogOut failed !!</b>');
+                }
+            } catch(e) {
+                updateStatus('txtRegStatus','<b>LogOut failed !!</b>');
+                console.log(e);
+            }
         }
 
         /* Basic call */
@@ -260,12 +284,37 @@
             /* Start main loop for receiving notifications and doing background linphonecore work */
             core.iterateEnabled = true;
         }
-            
+        
+        CallState = {
+            Idle : 0,
+            IncomingReceived : 1,
+            OutgoingInit : 2,
+            OutgoingProgress : 3,
+            OutgoingRinging : 4,
+            OutgoingEarlyMedia : 5,
+            Connected : 6,
+            StreamsRunning : 7,
+            Pausing : 8,
+            Paused : 9,
+            Resuming : 10,
+            Refered : 11,
+            Error : 12,
+            End : 13,
+            PausedByRemote : 14,
+            UpdatedByRemote : 15,
+            IncomingEarlyMedia : 16,
+            Updating : 17,
+            Released : 18,
+            EarlyUpdatedByRemote : 19,
+            EarlyUpdating : 20
+        };
+
         /* Callback that display call states */
         function onCallStateChanged(event, call, state, message){
-            updateStatus('txtRegStatus',message);
-            console.log(message);
-
+            updateStatus('txtCallStatus',message);
+            
+            oCall = call;
+            
             /*
                 Idle                number  0   Initial call state
                 IncomingReceived    number  1   This is a new incoming call
@@ -289,15 +338,46 @@
                 EarlyUpdatedByRemote    number  19  
                 EarlyUpdating       number  20  
             */
+            console.log('###############'+state+'##############');
+            console.log(message);
+
             switch ( state ) {
-                case 1 :
+                case CallState.IncomingReceived :
                     {
+                        // $("#confirmModal").modal();
+                        fn_inComingPop(true);
+
                         break;
                     }
                 default :
                     {
                         break;
                     }
+            }
+        }
+
+        function sipAcceptCall() {
+            var core = getCore();
+            var callParams = core.createDefaultCallParameters();
+            // var oCalls = core.calls;
+            // if (core.currentCall) {
+
+            /*
+                oCalls Variable 
+                1. onCallStateChanged's argument 
+                2. core.calls -- Array --> oCalls[index]
+                3. core.currentCall
+            */
+            var oCalls = core.currentCall;
+            if (core.currentCall) {
+                core.acceptCallWithParams(oCalls, callParams); // oCalls[0], callParams); // oCall,callParams);
+                $("#confirmModal").modal('hide');
+                
+                divCallOptions.style.opacity = 1;
+                uiVideoDisplayEvent(false, true);
+                uiVideoDisplayEvent(true, true);
+            } else {
+                // TO-DO
             }
         }
 
@@ -352,6 +432,11 @@
             call(addressStr);
         }
 
+        function sipHangUp() {
+            var core = getCore();
+            core.terminateCall(oCall);
+        }
+
         function uiOnConnectionEvent(b_connected, b_connecting) { // should be enum: connecting, connected, terminating, terminated
             btnRegister.disabled = b_connected || b_connecting;;
             btnUnRegister.disabled = !b_connected && !b_connecting;
@@ -388,6 +473,17 @@
                         }
                         break;
                     }
+            }
+        }
+
+
+        function fn_inComingPop(isOpen) {
+            if(isOpen) {
+                if($.browser.version > 9) $('.modal').removeClass('fade');
+                $("#confirmModal").modal();
+            } else {
+                if($.browser.version > 9) $('.modal').removeClass('fade');
+                $("#confirmModal").modal('hide');
             }
         }
         
@@ -489,11 +585,16 @@
 								class="btn btn-danger" id="btnUnRegister" value="LogOut"
 								disabled onclick='sipUnRegister();' /></td>
 						</tr>
+                        <tr>
+                            <td colspan="3">
+                                <a class="btn" href="javascript:fn_test()">Test</a>
+                            </td>
+                        </tr>
 						<!--<tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
                         </td>
-                    </tr>-->
+                        </tr>-->
 						<!-- jw: hidden  -->
 
 						<!--<tr>
@@ -546,36 +647,23 @@
 					<tr>
 						<td id="tdVideo" class='tab-video'>
 							<div id="divVideo" class='div-video'>
-								<div id="divVideoRemote"
-									style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
-									<!--<video class="video" width="100%" height="100%" id="video_remote" autoplay="autoplay" style="opacity: 0;
-                                        background-color: #000000; -webkit-transition-property: opacity; -webkit-transition-duration: 2s;"></video>-->
+                                
+                                <div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
+                                    <object id="video" type="application/x-linphone-web-video" width="0px" height="0px"></object>
+                                </div>
+                                <!--
+								<div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
 								</div>
 
-								<div id="divVideoLocalWrapper"
-									style="margin-left: 0px; border: 0px solid #009; z-index: 1000">
-									<iframe class="previewvideo"
-										style="border: 0px solid #009; z-index: 1000"> </iframe>
-									<!--<div id="divVideoLocal" class="previewvideo" style=' border:0px solid #009; z-index: 1000'>
-                                        <video class="video" width="100%" height="100%" id="video_local" autoplay="autoplay" muted="true" style="opacity: 0;
-                                            background-color: #000000; -webkit-transition-property: opacity;
-                                            -webkit-transition-duration: 2s;"></video>
-                                    </div>-->
+								<div id="divVideoLocalWrapper" style="margin-left: 0px; border: 0px solid #009; z-index: 1000">
+									<iframe class="previewvideo" style="border: 0px solid #009; z-index: 1000"> </iframe>
 								</div>
-								<div id="divScreencastLocalWrapper"
-									style="margin-left: 90px; border: 0px solid #009; z-index: 1000">
-									<iframe class="previewvideo"
-										style="border: 0px solid #009; z-index: 1000"> </iframe>
-									<div id="divScreencastLocal" class="previewvideo"
-										style='border: 0px solid #009; z-index: 1000'></div>
+								<div id="divScreencastLocalWrapper" style="margin-left: 90px; border: 0px solid #009; z-index: 1000">
+									<iframe class="previewvideo" style="border: 0px solid #009; z-index: 1000"> </iframe>
+									<div id="divScreencastLocal" class="previewvideo" style='border: 0px solid #009; z-index: 1000'></div>
 								</div>
-								<!--div id="div1" style="margin-left: 300px; border:0px solid #009; z-index: 1000">
-                                    <iframe class="previewvideo" style="border:0px solid #009; z-index: 1000"> </iframe>
-                                    <div id="div2" class="previewvideo" style='border:0px solid #009; z-index: 1000'>
-                                      <input type="button" class="btn" style="" id="Button1" value="Button1" /> &nbsp;
-                                      <input type="button" class="btn" style="" id="Button2" value="Button2" /> &nbsp;
-                                    </div>
-                                </div-->
+                                -->
+                                
 							</div>
 						</td>
 					</tr>
@@ -721,7 +809,7 @@
 						<p class="msg">전화를 받으시겠습니까?</p>
 						<br>
 						<button type="button" id=confirmOK class="btn btn-primary btn-sm"
-							onclick="sipCall(bDisableVideo ? 'call-audio' : 'call-audiovideo');">YES</button>
+							onclick="sipAcceptCall('call-audio');">YES</button>
 						<button type="button" id=confirmNO class="btn btn-default btn-sm"
 							data-dismiss="modal">NO</button>
 					</div>
