@@ -5,11 +5,10 @@
 * This file is part of Open Source sipML5 solution <http://www.sipml5.org>
 -->
 <html>
-<!-- head -->
 <head>
     <meta charset="utf-8" />
-    <!--<meta http-equiv="X-UA-Compatible" content="IE=edge" />-->
-    <meta http-equiv="X-UA-Compatible" content="IE=10" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!--<meta http-equiv="X-UA-Compatible" content="IE=10" />-->
  
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -143,7 +142,7 @@
     <!-- Javascript code -->
     <script type="text/javascript">
 
-        var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister;
+        var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister, gIsCoreLoaded, gCallState;
         var oCall;
 
         window.onload = function () {
@@ -171,9 +170,43 @@
 
         };
 
+        C =
+        {
+            divKeyPadWidth: 220
+        };
+
+        var CallState = {
+            Idle : 0,
+            IncomingReceived : 1,
+            OutgoingInit : 2,
+            OutgoingProgress : 3,
+            OutgoingRinging : 4,
+            OutgoingEarlyMedia : 5,
+            Connected : 6,
+            StreamsRunning : 7,
+            Pausing : 8,
+            Paused : 9,
+            Resuming : 10,
+            Refered : 11,
+            Error : 12,
+            End : 13,
+            PausedByRemote : 14,
+            UpdatedByRemote : 15,
+            IncomingEarlyMedia : 16,
+            Updating : 17,
+            Released : 18,
+            EarlyUpdatedByRemote : 19,
+            EarlyUpdating : 20
+        };
+
         /* return the core object */
         function getCore() {
             return document.getElementById('core');  
+        }
+
+        /* Return the video object */
+        function getVideo(){
+            return document.getElementById('videoObj');
         }
 
         function sipRegister()
@@ -187,6 +220,10 @@
             var password = txtPassword.value;
             var server = gServerAddr; /* proxy server */
             var domain = gProxyServerAddr; /* domain */
+
+            if( !gIsCoreLoaded) {
+                this.loadCore();
+            }
 
             var core = getCore();
 
@@ -245,6 +282,8 @@
                 if( ret == 0 ) {
                     updateStatus('txtRegStatus','<b>LogOut success !!</b>');
                     
+                    gIsCoreLoaded = false;
+                    
                     uiOnConnectionEvent(false,false);
                     //uiBtnCallSetText("");
                 } else {
@@ -255,20 +294,7 @@
                 console.log(e);
             }
         }
-
-        /* Basic call */
-        function call(addressStr){
-            var core = getCore();
-            
-            /*Create a new address with the paramaters*/
-            var address = core.newAddress(addressStr);
-            if(address !== null) {
-                /* Start the call with the contact address*/
-                core.inviteAddress(address);
-                console.log("Call: " + address.asString());
-            }
-        }
-            
+    
         function loadCore(){
             var core = getCore();
             core.init();
@@ -284,37 +310,15 @@
             
             /* Start main loop for receiving notifications and doing background linphonecore work */
             core.iterateEnabled = true;
+            gIsCoreLoaded = true;
         }
         
-        CallState = {
-            Idle : 0,
-            IncomingReceived : 1,
-            OutgoingInit : 2,
-            OutgoingProgress : 3,
-            OutgoingRinging : 4,
-            OutgoingEarlyMedia : 5,
-            Connected : 6,
-            StreamsRunning : 7,
-            Pausing : 8,
-            Paused : 9,
-            Resuming : 10,
-            Refered : 11,
-            Error : 12,
-            End : 13,
-            PausedByRemote : 14,
-            UpdatedByRemote : 15,
-            IncomingEarlyMedia : 16,
-            Updating : 17,
-            Released : 18,
-            EarlyUpdatedByRemote : 19,
-            EarlyUpdating : 20
-        };
-
         /* Callback that display call states */
         function onCallStateChanged(event, call, state, message){
             updateStatus('txtCallStatus',message);
             
             oCall = call;
+            gCallState = state;
             
             /*
                 Idle                number  0   Initial call state
@@ -350,35 +354,45 @@
 
                         break;
                     }
+
+                case CallState.Released :
+                    {
+                        fn_callOptionView(false);
+                        btnCall.disabled = false;
+                        btnHangUp.disabled = false;
+                        fn_videoView(false);
+                        break;
+                    }
+
+                case CallState.Connected :
+                    {
+                        fn_callOptionView(true);
+                        // btnMute.value = 'Mute';
+                        btnMute.disabled = false;
+                        // btnHoldResume.value = 'Hold';
+                        btnHoldResume.disabled = false;
+                        break;
+                    }
+
+                case CallState.Paused :
+                    {
+                        btnMute.disabled = true;
+                        btnHoldResume.disabled = false;
+                        btnHangUp.disabled = true;
+                        btnHoldResume.value = 'Resume';
+                    }
+
+                case CallState.Resuming :
+                    {
+                        btnMute.disabled = false;
+                        btnHoldResume.disabled = false;
+                        btnHangUp.disabled = false;
+                        btnHoldResume.value = 'Hold';
+                    }
                 default :
                     {
                         break;
                     }
-            }
-        }
-
-        function sipAcceptCall() {
-            var core = getCore();
-            var callParams = core.createDefaultCallParameters();
-            // var oCalls = core.calls;
-            // if (core.currentCall) {
-
-            /*
-                oCalls Variable 
-                1. onCallStateChanged's argument 
-                2. core.calls -- Array --> oCalls[index]
-                3. core.currentCall
-            */
-            var oCalls = core.currentCall;
-            if (core.currentCall) {
-                core.acceptCallWithParams(oCalls, callParams); // oCalls[0], callParams); // oCall,callParams);
-                $("#confirmModal").modal('hide');
-                
-                divCallOptions.style.opacity = 1;
-                uiVideoDisplayEvent(false, true);
-                uiVideoDisplayEvent(true, true);
-            } else {
-                // TO-DO
             }
         }
 
@@ -407,6 +421,31 @@
                     }
             }
         }
+
+        function sipAcceptCall() {
+            var core = getCore();
+            var callParams = core.createDefaultCallParameters();
+            // var oCalls = core.calls;
+            // if (core.currentCall) {
+
+            /*
+                oCalls Variable 
+                1. onCallStateChanged's argument 
+                2. core.calls -- Array --> oCalls[index]
+                3. core.currentCall
+            */
+            var oCalls = core.currentCall;
+            if (oCalls) {
+                core.acceptCallWithParams(oCalls, callParams); // oCalls[0], callParams); // oCall,callParams);
+                $("#confirmModal").modal('hide');
+                
+                fn_callOptionView(true);
+                uiVideoDisplayEvent(false, true);
+                uiVideoDisplayEvent(true, true);
+            } else {
+                // TO-DO
+            }
+        }
         
         /* Handler function */
         function onRegistration(form1){
@@ -431,12 +470,79 @@
             var addressStr = 'sip:' + txtPhoneNumber.value + '@' + gServerAddr;
             txtCallStatus.innerHTML = '<i>Calling...</i>';
             
-            call(addressStr);
+            if( s_type === 'call-audiovideo' ) {
+                /* Set the video ID for attach the video to the web page*/
+                var video = getVideo();
+                core.nativeVideoWindowId = video.window;
+                
+                /* Add video policy to always ask and accept video call */
+                core.videoPolicy.automaticallyAccept=true;
+                core.videoPolicy.automaticallyInitiate=true;
+
+                fn_videoView(true);
+            }
+
+            makeCall(addressStr);
+        }
+
+        /* Basic call */
+        function makeCall(addressStr){
+            var core = getCore();
+            
+            /*Create a new address with the paramaters*/
+            var address = core.newAddress(addressStr);
+            if(address !== null) {
+                /* Start the call with the contact address*/
+                core.inviteAddress(address);
+                console.log("Call: " + address.asString());
+            }
+        }
+
+        function sipTransfer() {
+            var core = getCore();
+            var oCall = core.currentCall;
+            if( oCall ) {
+                var referTo = 'sip:' + txtPhoneNumber.value + '@' + gServerAddr;
+                core.transferCall(oCall, referTo);
+            }
         }
 
         function sipHangUp() {
             var core = getCore();
-            core.terminateCall(oCall);
+            var oCall = core.currentCall;
+            if( oCall ) {
+                core.terminateCall(oCall);
+            }
+        }
+
+        // Mute or Unmute the call
+        function sipToggleMute() {
+            var core = getCore();
+            var bMute = core.micEnabled;
+            txtCallStatus.innerHTML = bMute ? '<i>Mute the call...</i>' : '<i>Unmute the call...</i>';
+            core.micEnabled = !bMute;
+            bMute = core.micEnabled;
+            btnMute.value = !bMute ? "Unmute" : "Mute";
+        }
+
+        // holds or resumes the call
+        function sipToggleHoldResume() {
+            var core = getCore();
+            var callarr = core.calls; //core.currentCall;
+            var oCall = callarr[0];
+
+            if( oCall ) {
+                
+                btnHoldResume.disabled = true;
+
+                if( gCallState === CallState.Paused ) {
+                    core.resumeCall( oCall );
+                    txtCallStatus.innerHTML = '<i>Resuming the call...</i>';
+                } else {
+                    core.pauseCall( oCall );
+                    txtCallStatus.innerHTML = '<i>Holding the call...</i>';
+                }
+            }
         }
 
         function uiOnConnectionEvent(b_connected, b_connecting) { // should be enum: connecting, connected, terminating, terminated
@@ -478,7 +584,6 @@
             }
         }
 
-
         function fn_inComingPop(isOpen) {
             if(isOpen) {
                 if($.browser.version > 9) $('.modal').removeClass('fade');
@@ -487,6 +592,50 @@
                 if($.browser.version > 9) $('.modal').removeClass('fade');
                 $("#confirmModal").modal('hide');
             }
+        }
+
+        function fn_callOptionView( isOpen ) {
+            if(isOpen) {
+                divCallOptions.style.opacity = 1;
+            } else {
+                divCallOptions.style.opacity = 0;
+            }
+        }
+
+        function fn_videoView( isOpen ) {
+            if( isOpen ) {
+                tdVideo.style.height = '340px';
+                divVideo.style.height = '100%';
+                videoObj.style.width = '100%';
+                videoObj.style.height = '100%';
+            } else {
+                tdVideo.style.height = '0px';
+                divVideo.style.height = '0%';
+                videoObj.style.width = '0%';
+                videoObj.style.height = '0%';
+            }
+        }
+
+        function openKeyPad() {
+            divKeyPad.style.visibility = 'visible';
+            divKeyPad.style.left = ((document.body.clientWidth - C.divKeyPadWidth) >> 1) + 'px';
+            divKeyPad.style.top = '70px';
+            divGlassPanel.style.visibility = 'visible';
+        }
+
+        function closeKeyPad() {
+            divKeyPad.style.left = '0px';
+            divKeyPad.style.top = '0px';
+            divKeyPad.style.visibility = 'hidden';
+            divGlassPanel.style.visibility = 'hidden';
+        }
+
+        function jlog( argMsg ) {
+            console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n\n\n\n\n'+argMsg+'@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+        }
+
+        function fn_test() {
+            fn_videoView(true);
         }
         
     </script>
@@ -587,11 +736,11 @@
 								class="btn btn-danger" id="btnUnRegister" value="LogOut"
 								disabled onclick='sipUnRegister();' /></td>
 						</tr>
-                        <tr>
+                        <!--<tr>
                             <td colspan="3">
                                 <a class="btn" href="javascript:fn_test()">Test</a>
                             </td>
-                        </tr>
+                        </tr>-->
 						<!--<tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
@@ -651,7 +800,7 @@
 							<div id="divVideo" class='div-video'>
                                 
                                 <div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
-                                    <object id="video" type="application/x-linphone-web-video" width="0px" height="0px"></object>
+                                    <object id="videoObj" type="application/x-linphone-web-video" style="width:0px; height:0px"></object>
                                 </div>
                                 <!--
 								<div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
@@ -671,18 +820,12 @@
 					</tr>
 					<tr>
 						<td align='center'>
-							<div id='divCallOptions' class='call-options'
-								style='opacity: 0; margin-top: 0px'>
-								<input type="button" class="btn" style="" id="btnFullScreen"
-									value="FullScreen" disabled onclick='toggleFullScreen();' />
-								&nbsp; <input type="button" class="btn" style="" id="btnMute"
-									value="Mute" onclick='sipToggleMute();' /> &nbsp; <input
-									type="button" class="btn" style="" id="btnHoldResume"
-									value="Hold" onclick='sipToggleHoldResume();' /> &nbsp; <input
-									type="button" class="btn" style="" id="btnTransfer"
-									value="Transfer" onclick='sipTransfer();' /> &nbsp; <input
-									type="button" class="btn" style="" id="btnKeyPad"
-									value="KeyPad" onclick='openKeyPad();' />
+							<div id='divCallOptions' class='call-options' style='opacity: 0; margin-top: 0px'>
+								<!--<input type="button" class="btn" style="" id="btnFullScreen" value="FullScreen" disabled onclick='toggleFullScreen();' />&nbsp;-->
+                                <input type="button" class="btn" style="" id="btnMute" value="Mute" onclick='sipToggleMute();' /> &nbsp; 
+                                <input type="button" class="btn" style="" id="btnHoldResume" value="Hold" onclick='sipToggleHoldResume();' /> &nbsp; 
+                                <input type="button" class="btn" style="" id="btnTransfer" value="Transfer" onclick='sipTransfer();' /> &nbsp; 
+                                <input type="button" class="btn" style="" id="btnKeyPad" value="KeyPad" onclick='openKeyPad();' />
 							</div>
 						</td>
 					</tr>
@@ -762,11 +905,11 @@
 	<ul id="ulCallOptions" class="dropdown-menu" style="visibility: hidden">
 		<li><a href="#" onclick='sipCall("call-audio");'>Audio</a></li>
 		<li><a href="#" onclick='sipCall("call-audiovideo");'>Video</a></li>
-		<li id='liScreenShare'><a href="#" onclick='sipShareScreen();'>Screen
-				Share</a></li>
+		<!--<li id='liScreenShare'><a href="#" onclick='sipShareScreen();'>Screen
+				Share</a></li>-->
 		<li class="divider"></li>
-		<li><a href="#" onclick='uiDisableCallOptions();'><b>Disable
-					these options</b></a></li>
+		<!--<li><a href="#" onclick='uiDisableCallOptions();'><b>Disable
+					these options</b></a></li>-->
 	</ul>
 	<!--  jw: hidden here -->
 	<div style="visibility: hidden">
