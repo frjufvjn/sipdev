@@ -963,10 +963,8 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
 					<div class="modal-body text-center">
 						<p class="msg">전화를 받으시겠습니까?</p>
 						<br>
-						<button type="button" id=confirmOK class="btn btn-primary btn-sm"
-							onclick="sipAcceptCall('call-audio');">YES</button>
-						<button type="button" id=confirmNO class="btn btn-default btn-sm"
-							data-dismiss="modal">NO</button>
+						<button type="button" id=confirmOK class="btn btn-primary btn-sm" onclick="sipAcceptCall('call-audio');">YES</button>
+						<button type="button" id=confirmNO class="btn btn-default btn-sm" onclick="sipHangUp();" data-dismiss="modal">NO</button>
 					</div>
 					<br>
 				</div>
