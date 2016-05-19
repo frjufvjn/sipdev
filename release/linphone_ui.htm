@@ -1,9 +1,4 @@
 ﻿﻿﻿<!DOCTYPE html>
-<!--
-* Copyright (C) 2012-2016 Doubango Telecom <http://www.doubango.org>
-* License: BSD
-* This file is part of Open Source sipML5 solution <http://www.sipml5.org>
--->
 <html>
 <head>
     <meta charset="utf-8" />
@@ -137,13 +132,14 @@
     
     <!-- linphone library -->
     <script type="text/javascript" src="./linphone/utils.js"></script>
-    <!--<script type="text/javascript" src="./linphone/core.js"></script>-->
-    <!--<script type="text/javascript" src="./linphone/ui/core.js"></script>-->
+
     <!-- Javascript code -->
     <script type="text/javascript">
 
         var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister, gIsCoreLoaded, gCallState;
         var oCall;
+        var gIsPausedByRemote = false;
+        var gIsCoreLogView = true;
 
         window.onload = function () {
 
@@ -155,6 +151,9 @@
 
             // is using sip.linphone.org accout
             gIsSimpleRegister = true;
+
+            // is using linphone core log 
+            gIsCoreLogView = false;
 
             if( !gIsSimpleRegister ) {
                 gServerAddr = '10.1.15.130';
@@ -173,30 +172,6 @@
         C =
         {
             divKeyPadWidth: 220
-        };
-
-        var CallState = {
-            Idle : 0,
-            IncomingReceived : 1,
-            OutgoingInit : 2,
-            OutgoingProgress : 3,
-            OutgoingRinging : 4,
-            OutgoingEarlyMedia : 5,
-            Connected : 6,
-            StreamsRunning : 7,
-            Pausing : 8,
-            Paused : 9,
-            Resuming : 10,
-            Refered : 11,
-            Error : 12,
-            End : 13,
-            PausedByRemote : 14,
-            UpdatedByRemote : 15,
-            IncomingEarlyMedia : 16,
-            Updating : 17,
-            Released : 18,
-            EarlyUpdatedByRemote : 19,
-            EarlyUpdating : 20
         };
 
         /* return the core object */
@@ -285,7 +260,7 @@
                     gIsCoreLoaded = false;
                     
                     uiOnConnectionEvent(false,false);
-                    //uiBtnCallSetText("");
+                    txtCallStatus.innerHTML = '';
                 } else {
                     updateStatus('txtRegStatus','<b>LogOut failed !!</b>');
                 }
@@ -305,7 +280,7 @@
                
             /* Display logs information in the console */
             core.logHandler = function(level, message) {
-                window.console.log(message);
+                if( gIsCoreLogView ) window.console.log(message);
             }
             
             /* Start main loop for receiving notifications and doing background linphonecore work */
@@ -313,6 +288,30 @@
             gIsCoreLoaded = true;
         }
         
+        var CallState = {
+            Idle : 0,
+            IncomingReceived : 1,
+            OutgoingInit : 2,
+            OutgoingProgress : 3,
+            OutgoingRinging : 4,
+            OutgoingEarlyMedia : 5,
+            Connected : 6,
+            StreamsRunning : 7,
+            Pausing : 8,
+            Paused : 9,
+            Resuming : 10,
+            Refered : 11,
+            Error : 12,
+            End : 13,
+            PausedByRemote : 14,
+            UpdatedByRemote : 15,
+            IncomingEarlyMedia : 16,
+            Updating : 17,
+            Released : 18,
+            EarlyUpdatedByRemote : 19,
+            EarlyUpdating : 20
+        };
+
         /* Callback that display call states */
         function onCallStateChanged(event, call, state, message){
             updateStatus('txtCallStatus',message);
@@ -343,13 +342,9 @@
                 EarlyUpdatedByRemote    number  19  
                 EarlyUpdating       number  20  
             */
-            console.log('###############'+state+'##############');
+            console.log('############### ['+state+'] ##############');
             console.log(message);
-/*
-jlog('call.remoteParams.videoEnabled : ' + call.remoteParams.videoEnabled);
-jlog('call.currentParams.videoEnabled : ' + call.currentParams.videoEnabled);
-jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyAccept);
-*/
+
             switch ( state ) {
                 case CallState.IncomingReceived :
                     {
@@ -365,6 +360,8 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
                         btnCall.disabled = false;
                         btnHangUp.disabled = false;
                         fn_videoView(false);
+                        
+                        updateStatus('txtCallStatus',message + ' - call\'s duration : ' +  call.duration + 'sec');
 
                         break;
                     }
@@ -396,7 +393,11 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
 
                 case CallState.StreamsRunning :
                     {
-
+                        // After paused by remote, then reconnected
+                        if( gIsPausedByRemote ) {
+                            btnHoldResume.disabled = false;
+                            gIsPausedByRemote = false;
+                        }
                         break;
                     }
 
@@ -416,6 +417,20 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
                         btnHoldResume.disabled = false;
                         btnHangUp.disabled = false;
                         btnHoldResume.value = 'Hold';
+
+                        break;
+                    }
+
+                case CallState.PausedByRemote :
+                    {
+                        gIsPausedByRemote = true;
+                        btnHoldResume.disabled = true;
+                        break;
+                    }
+
+                case CallState.Error :
+                    {
+                        btnCall.disabled = false;
 
                         break;
                     }
@@ -512,6 +527,7 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
                 /* Start the call with the contact address*/
                 core.inviteAddressWithParams(address, callParams);
             }
+            txtPhoneNumber.value = '';
         }
 
         function sipTransfer() {
@@ -521,6 +537,7 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
                 var referTo = 'sip:' + txtPhoneNumber.value + '@' + gServerAddr;
                 core.transferCall(oCall, referTo);
             }
+            txtPhoneNumber.value = '';
         }
 
         function sipHangUp() {
@@ -814,23 +831,9 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
 					<tr>
 						<td id="tdVideo" class='tab-video'>
 							<div id="divVideo" class='div-video'>
-                                
                                 <div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
                                     <object id="videoObj" type="application/x-linphone-web-video" style="width:0px; height:0px"></object>
                                 </div>
-                                <!--
-								<div id="divVideoRemote" style='position: relative; border: 1px solid #009; height: 100%; width: 100%; z-index: auto; opacity: 1'>
-								</div>
-
-								<div id="divVideoLocalWrapper" style="margin-left: 0px; border: 0px solid #009; z-index: 1000">
-									<iframe class="previewvideo" style="border: 0px solid #009; z-index: 1000"> </iframe>
-								</div>
-								<div id="divScreencastLocalWrapper" style="margin-left: 90px; border: 0px solid #009; z-index: 1000">
-									<iframe class="previewvideo" style="border: 0px solid #009; z-index: 1000"> </iframe>
-									<div id="divScreencastLocal" class="previewvideo" style='border: 0px solid #009; z-index: 1000'></div>
-								</div>
-                                -->
-                                
 							</div>
 						</td>
 					</tr>
@@ -977,10 +980,6 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
 			</div>
 		</div>
 	</div>
-	<!-- container -->
-
-
-
 
 	<!-- Le javascript
     ================================================== -->
@@ -999,25 +998,5 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
 	<script type="text/javascript" src="./assets/js/bootstrap-collapse.js"></script>
 	<script type="text/javascript" src="./assets/js/bootstrap-carousel.js"></script>
 	<script type="text/javascript" src="./assets/js/bootstrap-typeahead.js"></script>
-
-	<!-- Audios -->
-	<!--<audio id="audio_remote" autoplay="autoplay"> </audio>
-    <audio id="ringtone" loop src="sounds/ringtone.wav"> </audio>
-    <audio id="ringbacktone" loop src="sounds/ringbacktone.wav"> </audio>
-    <audio id="dtmfTone" src="sounds/dtmf.wav"> </audio>-->
-
-	<!-- GOOGLE ANALYTICS -->
-	<!--<script type="text/javascript">
-        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-    </script>-->
-
-	<!--<script type="text/javascript">
-        try {
-            var pageTracker = _gat._getTracker("UA-6868621-19");
-            pageTracker._trackPageview();
-        } catch (err) { }
-    </script>-->
-
 </body>
 </html>
