@@ -345,11 +345,11 @@
             */
             console.log('###############'+state+'##############');
             console.log(message);
-
+/*
 jlog('call.remoteParams.videoEnabled : ' + call.remoteParams.videoEnabled);
 jlog('call.currentParams.videoEnabled : ' + call.currentParams.videoEnabled);
 jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyAccept);
-
+*/
             switch ( state ) {
                 case CallState.IncomingReceived :
                     {
@@ -376,6 +376,26 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
                         btnMute.disabled = false;
                         // btnHoldResume.value = 'Hold';
                         btnHoldResume.disabled = false;
+
+                        if( call.remoteParams.videoEnabled === true ) {
+                            var video = getVideo();
+                            core.nativeVideoWindowId = video.window;
+
+                            /* Add video policy to always ask and accept video call */
+                            call.currentParams.videoEnabled=true;
+                            core.videoPolicy.automaticallyAccept=true;
+                            core.videoPolicy.automaticallyInitiate=true;
+
+                            core.acceptCallUpdate(call, call.currentParams);
+
+                            fn_videoView(true);
+                        }
+
+                        break;
+                    }
+
+                case CallState.StreamsRunning :
+                    {
 
                         break;
                     }
@@ -433,39 +453,26 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
         }
 
         function sipAcceptCall() {
+            
             var core = getCore();
-            var callParams = core.createDefaultCallParameters();
-            // var oCalls = core.calls;
-            // if (core.currentCall) {
-
-            /*
-                oCalls Variable 
-                1. onCallStateChanged's argument 
-                2. core.calls -- Array --> oCalls[index]
-                3. core.currentCall
-            */
             var oCalls = core.currentCall;
+            var callParams = core.createDefaultCallParameters();
+
             if (oCalls) {
                 core.acceptCallWithParams(oCalls, callParams); // oCalls[0], callParams); // oCall,callParams);
                 $("#confirmModal").modal('hide');
                 
+                if( oCalls.remoteParams.videoEnabled === true ) {
+                    /* Add video policy to always ask and accept video call */
+                    oCalls.currentParams.videoEnabled=true;
+                }
+
                 fn_callOptionView(true);
-                uiVideoDisplayEvent(false, true);
-                uiVideoDisplayEvent(true, true);
             } else {
                 // TO-DO
             }
         }
         
-        /* Handler function */
-        function onRegistration(form1){
-            registration(document.form1.username.value,document.form1.password.value,document.form1.address.value);
-        }
-        
-        function onCall(form2){
-            call(document.form2.address.value);
-        }
-
         // makes a call (SIP INVITE)
         function sipCall(s_type) {
             if( !txtPhoneNumber.value ) {
@@ -480,31 +487,30 @@ jlog('core.videoPolicy.automaticallyAccept : ' + core.videoPolicy.automaticallyA
             var addressStr = 'sip:' + txtPhoneNumber.value + '@' + gServerAddr;
             txtCallStatus.innerHTML = '<i>Calling...</i>';
             
+            var core = getCore();
+            var callParams = core.createDefaultCallParameters();
+            
+            /* Add video policy to always ask and accept video call */
+            core.videoPolicy.automaticallyAccept=true;
+            core.videoPolicy.automaticallyInitiate=true;
+            
             if( s_type === 'call-audiovideo' ) {
                 /* Set the video ID for attach the video to the web page*/
                 var video = getVideo();
                 core.nativeVideoWindowId = video.window;
-                
-                /* Add video policy to always ask and accept video call */
-                core.videoPolicy.automaticallyAccept=true;
-                core.videoPolicy.automaticallyInitiate=true;
+
+                callParams.videoEnabled = true;
 
                 fn_videoView(true);
+            } else {
+                callParams.videoEnabled = false;
             }
 
-            makeCall(addressStr);
-        }
-
-        /* Basic call */
-        function makeCall(addressStr){
-            var core = getCore();
-            
             /*Create a new address with the paramaters*/
             var address = core.newAddress(addressStr);
             if(address !== null) {
                 /* Start the call with the contact address*/
-                core.inviteAddress(address);
-                console.log("Call: " + address.asString());
+                core.inviteAddressWithParams(address, callParams);
             }
         }
 
