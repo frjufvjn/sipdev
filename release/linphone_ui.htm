@@ -393,8 +393,9 @@
 
                 case CallState.Released :
                     {
-                        // incall시 일정시간 받지 않으면 release 되므로 모달창을 닫음. 
+                        
                         if(!gIsCallRefered) {
+                            // incall시 일정시간 받지 않으면 release 되므로 모달창을 닫음. 
                             $("#confirmModal").modal('hide');
 
                             fn_callOptionView(false);
@@ -407,6 +408,7 @@
                             updateStatus('txtCallStatus',message + ' - call\'s duration : ' +  call.duration + 'sec');
                         } else {
 
+                            updateStatus('txtCallStatus','Refered Call\'s Streams Running...');
                             gIsCallRefered = false;
                         }
 
