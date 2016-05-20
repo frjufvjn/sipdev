@@ -141,7 +141,38 @@
         var gIsPausedByRemote = false;
         var gIsCoreLogView = true;
 
+        var CallState = {
+            Idle : 0,
+            IncomingReceived : 1,
+            OutgoingInit : 2,
+            OutgoingProgress : 3,
+            OutgoingRinging : 4,
+            OutgoingEarlyMedia : 5,
+            Connected : 6,
+            StreamsRunning : 7,
+            Pausing : 8,
+            Paused : 9,
+            Resuming : 10,
+            Refered : 11,
+            Error : 12,
+            End : 13,
+            PausedByRemote : 14,
+            UpdatedByRemote : 15,
+            IncomingEarlyMedia : 16,
+            Updating : 17,
+            Released : 18,
+            EarlyUpdatedByRemote : 19,
+            EarlyUpdating : 20
+        };
+
+        C =
+        {
+            divKeyPadWidth: 220
+        };
+
         window.onload = function () {
+
+            this.installCore();
 
             btnRegister.disabled = false;
             document.body.style.cursor = 'default';
@@ -169,10 +200,32 @@
 
         };
 
-        C =
-        {
-            divKeyPadWidth: 220
-        };
+        function installCore() {
+            var config = getConfig();
+            var browserDetection;
+            var core;
+            
+            document.body.style.cursor = 'wait';
+
+            navigator.plugins.refresh(false);
+            
+            /* Detection of the system information : OS/Architecture/Browser */
+            browserDetection = browserDetect();
+
+            // Find the correct plugin file
+            setPluginLink(config,browserDetection);
+            core = getCore();
+
+            // Detection of the plugin
+            var ret = detect(config,core);
+            if(ret === 0){ // The plugin is not installed or outdated
+                // Donwload the plugin
+                // Donwload the plugin
+                var version = '1.0.14';
+                var url = 'http://web.linphone.org/downloads/linphone-web-' + version + '-Win32.msi';
+                window.open(url, '_self');
+            }
+        }
 
         /* return the core object */
         function getCore() {
@@ -288,30 +341,6 @@
             gIsCoreLoaded = true;
         }
         
-        var CallState = {
-            Idle : 0,
-            IncomingReceived : 1,
-            OutgoingInit : 2,
-            OutgoingProgress : 3,
-            OutgoingRinging : 4,
-            OutgoingEarlyMedia : 5,
-            Connected : 6,
-            StreamsRunning : 7,
-            Pausing : 8,
-            Paused : 9,
-            Resuming : 10,
-            Refered : 11,
-            Error : 12,
-            End : 13,
-            PausedByRemote : 14,
-            UpdatedByRemote : 15,
-            IncomingEarlyMedia : 16,
-            Updating : 17,
-            Released : 18,
-            EarlyUpdatedByRemote : 19,
-            EarlyUpdating : 20
-        };
-
         /* Callback that display call states */
         function onCallStateChanged(event, call, state, message){
             updateStatus('txtCallStatus',message);
@@ -544,6 +573,11 @@
         }
 
         function sipTransfer() {
+            if( !txtPhoneNumber.value ) {
+                txtCallStatus.innerHTML = '<b>invalid target number !!</b>';
+                return;
+            }
+
             var core = getCore();
             var oCall = core.currentCall;
             if( oCall ) {
@@ -681,7 +715,8 @@
         }
 
         function fn_test() {
-            //fn_videoView(true);
+            //location.replace ='http://www.naver.com';
+            alert(navigator.userAgent);
         }
         
     </script>
@@ -782,11 +817,11 @@
 								class="btn btn-danger" id="btnUnRegister" value="LogOut"
 								disabled onclick='sipUnRegister();' /></td>
 						</tr>
-                        <!--<tr>
+                        <tr>
                             <td colspan="3">
                                 <a class="btn" href="javascript:fn_test()">Test</a>
                             </td>
-                        </tr>-->
+                        </tr>
 						<!--<tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
@@ -831,7 +866,6 @@
 									<button id="btnCall" disabled class="btn btn-primary"
 										data-toggle="dropdown">Call</button>
 								</div>
-								&nbsp;&nbsp;
 								<div class="btn-group">
 									<input type="button" id="btnHangUp"
 										style="margin: 0; vertical-align: middle; height: 100%;"
@@ -857,7 +891,8 @@
                                 <input type="button" class="btn" style="" id="btnMute" value="Mute" onclick='sipToggleMute();' /> &nbsp; 
                                 <input type="button" class="btn" style="" id="btnHoldResume" value="Hold" onclick='sipToggleHoldResume();' /> &nbsp; 
                                 <input type="button" class="btn" style="" id="btnTransfer" value="Transfer" onclick='sipTransfer();' /> &nbsp; 
-                                <input type="button" class="btn" style="" id="btnKeyPad" value="KeyPad" onclick='openKeyPad();' />
+                                <input type="button" class="btn" style="" id="btnKeyPad" value="KeyPad" onclick='openKeyPad();' /> &nbsp;
+                                <input type="button" class="btn" style="" id="btnVideoOnOf" value="Video On" onclick='sipVideoOnOff();' />
 							</div>
 						</td>
 					</tr>
@@ -994,12 +1029,10 @@
 		</div>
 	</div>
 
-	<!-- Le javascript
-    ================================================== -->
+	<!-- Le javascript ================================================== -->
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="./assets/js/jquery.js"></script>
-	<script type="text/javascript"
-		src="./assets/js/bootstrap-transition.js"></script>
+	<script type="text/javascript" src="./assets/js/bootstrap-transition.js"></script>
 	<script type="text/javascript" src="./assets/js/bootstrap-alert.js"></script>
 	<script type="text/javascript" src="./assets/js/bootstrap-modal.js"></script>
 	<script type="text/javascript" src="./assets/js/bootstrap-dropdown.js"></script>
