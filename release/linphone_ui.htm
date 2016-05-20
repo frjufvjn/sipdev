@@ -140,6 +140,7 @@
         var oCall;
         var gIsPausedByRemote = false;
         var gIsCoreLogView = true;
+        var gIsCallRefered = false;
 
         var CallState = {
             Idle : 0,
@@ -330,6 +331,8 @@
             /* Add callback for registration and call state */
             addEvent(core,"callStateChanged",onCallStateChanged);
             addEvent(core,"registrationStateChanged",onRegistrationStateChanged);
+            addEvent(core,"referReceived",onReferReceived);
+            addEvent(core,"transferStateChanged",onTransferStateChanged);
                
             /* Display logs information in the console */
             core.logHandler = function(level, message) {
@@ -391,16 +394,21 @@
                 case CallState.Released :
                     {
                         // incall시 일정시간 받지 않으면 release 되므로 모달창을 닫음. 
-                        $("#confirmModal").modal('hide');
+                        if(!gIsCallRefered) {
+                            $("#confirmModal").modal('hide');
 
-                        fn_callOptionView(false);
-                        btnCall.disabled = false;
-                        btnHangUp.disabled = false;
-                        fn_videoView(false);
+                            fn_callOptionView(false);
+                            btnCall.disabled = false;
+                            btnHangUp.disabled = false;
+                            fn_videoView(false);
 
-                        acceptedRemoteName.innerHTML = '';
+                            acceptedRemoteName.innerHTML = '';
 
-                        updateStatus('txtCallStatus',message + ' - call\'s duration : ' +  call.duration + 'sec');
+                            updateStatus('txtCallStatus',message + ' - call\'s duration : ' +  call.duration + 'sec');
+                        } else {
+
+                            gIsCallRefered = false;
+                        }
 
                         break;
                     }
@@ -409,6 +417,7 @@
                     {
                         fn_callOptionView(true);
                         btnCall.disabled = true;
+                        btnHangUp.disabled = false;
                         // btnMute.value = 'Mute';
                         btnMute.disabled = false;
                         // btnHoldResume.value = 'Hold';
@@ -438,6 +447,12 @@
                             btnHoldResume.disabled = false;
                             gIsPausedByRemote = false;
                         }
+                        break;
+                    }
+
+                case CallState.Refered :
+                    {
+                        gIsCallRefered = true;
                         break;
                     }
 
@@ -481,7 +496,7 @@
             }
         }
 
-        function onRegistrationStateChanged(event, proxy, state, message){
+        function onRegistrationStateChanged(event, proxy, state, message) {
             updateStatus('txtRegStatus',message);
             console.log('###############'+state+'##############');
             console.log(message);
@@ -505,6 +520,19 @@
                         break;
                     }
             }
+        }
+
+        function onReferReceived(lc, referTo) {
+            console.log('referTo : ' + referTo);
+        }
+
+        /*
+            lc:             the LinphoneCore
+            transfered:     the call that was transfered
+            newCallState:   the state of the call to transfer target at the far end.
+        */
+        function onTransferStateChanged(lc, transfered, newCallState) {
+            console.log('------------------'+newCallState+'------------------');
         }
 
         function sipAcceptCall() {
