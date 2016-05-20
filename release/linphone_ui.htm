@@ -136,7 +136,7 @@
     <!-- Javascript code -->
     <script type="text/javascript">
 
-        var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister, gIsCoreLoaded, gCallState;
+        var gServerAddr, gProxyServerAddr, gIsOutbandProxy, gTransportType, gIsSimpleRegister, gIsCoreLoaded, gCallState, gAcceptedRemoteName;
         var oCall;
         var gIsPausedByRemote = false;
         var gIsCoreLogView = true;
@@ -348,7 +348,12 @@
             switch ( state ) {
                 case CallState.IncomingReceived :
                     {
-                        // $("#confirmModal").modal();
+                        /*
+                        jlog('>> '+oCalls.remoteAddress.displayName );  // ''
+                        jlog('>> '+oCalls.remoteAddress.username );     // 'jwpark8'
+                        jlog('>> '+oCalls.remoteAddress.asString() );   // 'sip:jwpark8@sip.linphone.org'
+                        */
+                        acceptedRemoteName.innerHTML = '<p><b>call from : '+call.remoteAddress.username+'</b></p>';
                         fn_inComingPop(true);
 
                         break;
@@ -356,11 +361,16 @@
 
                 case CallState.Released :
                     {
+                        // incall시 일정시간 받지 않으면 release 되므로 모달창을 닫음. 
+                        $("#confirmModal").modal('hide');
+
                         fn_callOptionView(false);
                         btnCall.disabled = false;
                         btnHangUp.disabled = false;
                         fn_videoView(false);
-                        
+
+                        acceptedRemoteName.innerHTML = '';
+
                         updateStatus('txtCallStatus',message + ' - call\'s duration : ' +  call.duration + 'sec');
 
                         break;
@@ -369,6 +379,7 @@
                 case CallState.Connected :
                     {
                         fn_callOptionView(true);
+                        btnCall.disabled = true;
                         // btnMute.value = 'Mute';
                         btnMute.disabled = false;
                         // btnHoldResume.value = 'Hold';
@@ -474,7 +485,9 @@
             var callParams = core.createDefaultCallParameters();
 
             if (oCalls) {
+
                 core.acceptCallWithParams(oCalls, callParams); // oCalls[0], callParams); // oCall,callParams);
+
                 $("#confirmModal").modal('hide');
                 
                 if( oCalls.remoteParams.videoEnabled === true ) {
@@ -668,7 +681,7 @@
         }
 
         function fn_test() {
-            fn_videoView(true);
+            //fn_videoView(true);
         }
         
     </script>
@@ -971,7 +984,7 @@
 					<br>
 					<div class="modal-body text-center">
 						<p class="msg">전화를 받으시겠습니까?</p>
-						<br>
+                        <p id="acceptedRemoteName" class="msg"></p>
 						<button type="button" id=confirmOK class="btn btn-primary btn-sm" onclick="sipAcceptCall('call-audio');">YES</button>
 						<button type="button" id=confirmNO class="btn btn-default btn-sm" onclick="sipHangUp();" data-dismiss="modal">NO</button>
 					</div>
