@@ -58,8 +58,39 @@ function getConfig(){
 }
 
 
+function get_version_of_IE() { 
+
+	 var word; 
+	 var version = "N/A"; 
+
+	 var agent = navigator.userAgent.toLowerCase(); 
+	 var name = navigator.appName; 
+
+	 // IE old version ( IE 10 or Lower ) 
+	 if ( name == "Microsoft Internet Explorer" ) word = "msie "; 
+
+	 else { 
+		 // IE 11 
+		 if ( agent.search("trident") > -1 ) word = "trident/.*rv:"; 
+
+		 // Microsoft Edge  
+		 else if ( agent.search("edge/") > -1 ) word = "edge/"; 
+	 } 
+
+	 var reg = new RegExp( word + "([0-9]{1,})(\\.{0,}[0-9]{0,1})" ); 
+
+	 if (  reg.exec( agent ) != null  ) version = RegExp.$1 + RegExp.$2; 
+
+	 return version; 
+} 
+
 /* Method to create callbacks */
 function addEvent(obj, name, func){
+	if(get_version_of_IE().indexOf('11') != -1 ) {
+		obj['on' + name] = func;
+		return;
+	}
+	
 	var browser = searchString(getDataBrowser());
     if (browser !== 'Explorer') {
         obj.addEventListener(name, func, false); 
