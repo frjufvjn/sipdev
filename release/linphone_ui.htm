@@ -405,11 +405,6 @@
             switch ( state ) {
                 case CallState.IncomingReceived :
                     {
-                        /*
-                        jlog('>> '+oCalls.remoteAddress.displayName );  // ''
-                        jlog('>> '+oCalls.remoteAddress.username );     // 'jwpark8'
-                        jlog('>> '+oCalls.remoteAddress.asString() );   // 'sip:jwpark8@sip.linphone.org'
-                        */
                         acceptedRemoteName.innerHTML = '<p><b>call from : '+call.remoteAddress.username+'</b></p>';
                         fn_inComingPop(true);
 
@@ -489,6 +484,9 @@
                         {
                             var currentParams = call.currentParams;
                             if( call.remoteParams.videoEnabled === true ) {
+                                var video = getVideo();
+                                core.nativeVideoWindowId = video.window;
+
                                 currentParams.videoEnabled = true;
                                 core.acceptCallUpdate(call,currentParams);
                                 fn_videoView(true);
@@ -704,23 +702,25 @@
         }
 
         function sipVideoOnOff() {
-            var core = getCore();
-            var oCalls = core.currentCall;
-            var currentParams = oCalls.currentParams;
-            console.log('>> currentParams.videoEnabled : ' + currentParams.videoEnabled);
-            if( currentParams.videoEnabled ) {
-                console.log('true');
-                currentParams.videoEnabled = false;
-                core.acceptCallUpdate(oCalls,currentParams);
-                fn_videoView(false);
-            } else {
-                console.log('false');
-                var video = getVideo();
-                core.nativeVideoWindowId = video.window;
-                
-                currentParams.videoEnabled = true;
-                core.acceptCallUpdate(oCalls,currentParams);
-                fn_videoView(true);
+            try {
+                var core = getCore();
+                var oCalls = core.currentCall;
+                var callParams = oCalls.currentParams;
+
+                if( callParams.videoEnabled ) {
+                    callParams.videoEnabled = false;
+                    core.updateCall(oCalls,callParams);
+                    fn_videoView(false);
+                } else {
+                    var video = getVideo();
+                    core.nativeVideoWindowId = video.window;
+                    
+                    callParams.videoEnabled = true;
+                    core.updateCall(oCalls,callParams);
+                    fn_videoView(true);
+                }
+            } catch (e) {
+                console.log(e);
             }
         }
 
@@ -787,11 +787,13 @@
                 divVideo.style.height = '100%';
                 videoObj.style.width = '100%';
                 videoObj.style.height = '100%';
+                btnVideoOnOf.value = 'Video Off';
             } else {
                 tdVideo.style.height = '0px';
                 divVideo.style.height = '0%';
                 videoObj.style.width = '0%';
                 videoObj.style.height = '0%';
+                btnVideoOnOf.value = 'Video On';
             }
         }
 
