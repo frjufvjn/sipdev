@@ -333,6 +333,7 @@
             addEvent(core,"registrationStateChanged",onRegistrationStateChanged);
             addEvent(core,"referReceived",onReferReceived);
             addEvent(core,"transferStateChanged",onTransferStateChanged);
+            addEvent(core,"callLogUpdated",onCallLogUpdated);
                
             /* Display logs information in the console */
             core.logHandler = function(level, message) {
@@ -342,6 +343,30 @@
             /* Start main loop for receiving notifications and doing background linphonecore work */
             core.iterateEnabled = true;
             gIsCoreLoaded = true;
+        }
+
+        /* For CallLog --> Call History */
+        function onCallLogUpdated(lc, newcl) {
+            console.log('>>> '+newcl.callId);
+            console.log('>>> '+newcl.dir);
+            console.log('>>> '+newcl.duration);
+            console.log('>>> '+newcl.remoteAddress.username);
+            console.log('>>> '+newcl.toStr());
+            console.log('>>> '+newcl.videoEnabled);
+            console.log('>>> '+newcl.status);
+            console.log('>>> '+newcl.startDate);
+
+            var date = fn_convTime(newcl.startDate);
+            console.log(date.getDate());
+            console.log(date.getMonth());
+            console.log(date.getFullYear());
+            console.log(date.getHours());
+            console.log(date.getMinutes());
+            console.log(date.getSeconds());
+        }
+
+        function fn_convTime(time_start) {
+            return new Date(1000 * time_start);
         }
         
         /* Callback that display call states */
@@ -455,6 +480,29 @@
                 case CallState.Refered :
                     {
                         gIsCallRefered = true;
+                        break;
+                    }
+
+                case CallState.UpdatedByRemote : 
+                    {
+                        try
+                        {
+                            var currentParams = call.currentParams;
+                            if( call.remoteParams.videoEnabled === true ) {
+                                currentParams.videoEnabled = true;
+                                core.acceptCallUpdate(call,currentParams);
+                                fn_videoView(true);
+                            } else {
+                                currentParams.videoEnabled = false;
+                                core.acceptCallUpdate(call,currentParams);
+                                fn_videoView(false);
+                            }
+                        }
+                        catch (e)
+                        {
+                            console.log(e);
+                        }
+                        
                         break;
                     }
 
@@ -655,6 +703,27 @@
             }
         }
 
+        function sipVideoOnOff() {
+            var core = getCore();
+            var oCalls = core.currentCall;
+            var currentParams = oCalls.currentParams;
+            console.log('>> currentParams.videoEnabled : ' + currentParams.videoEnabled);
+            if( currentParams.videoEnabled ) {
+                console.log('true');
+                currentParams.videoEnabled = false;
+                core.acceptCallUpdate(oCalls,currentParams);
+                fn_videoView(false);
+            } else {
+                console.log('false');
+                var video = getVideo();
+                core.nativeVideoWindowId = video.window;
+                
+                currentParams.videoEnabled = true;
+                core.acceptCallUpdate(oCalls,currentParams);
+                fn_videoView(true);
+            }
+        }
+
         function uiOnConnectionEvent(b_connected, b_connecting) { // should be enum: connecting, connected, terminating, terminated
             btnRegister.disabled = b_connected || b_connecting;;
             btnUnRegister.disabled = !b_connected && !b_connecting;
@@ -746,7 +815,23 @@
 
         function fn_test() {
             //location.replace ='http://www.naver.com';
-            alert(navigator.userAgent);
+            //alert(navigator.userAgent);
+
+            var date = new Date();
+
+            alert(date.getFullYear() +'-'+f_lpad((date.getMonth()+1).toString(), '0',2)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds());
+        }
+
+        function f_lpad(s, c, n) {
+            if (!s || !c || s.length >= n) {
+                return s;
+            }
+            
+            var max = (n - s.length) / c.length;
+            for ( var i = 0; i < max; i++) {
+                s = c + s;
+            }
+            return s;
         }
         
     </script>
