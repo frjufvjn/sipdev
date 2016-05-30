@@ -489,10 +489,13 @@
 
                                 currentParams.videoEnabled = true;
                                 core.acceptCallUpdate(call,currentParams);
+                                core.updateCall(call,currentParams);
+
                                 fn_videoView(true);
                             } else {
                                 currentParams.videoEnabled = false;
                                 core.acceptCallUpdate(call,currentParams);
+                                core.updateCall(call,currentParams);
                                 fn_videoView(false);
                             }
                         }
