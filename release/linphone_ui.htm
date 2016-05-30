@@ -141,6 +141,7 @@
         var gIsPausedByRemote = false;
         var gIsCoreLogView = true;
         var gIsCallRefered = false;
+        var gIsVideoOnOffIng = false;
 
         var CallState = {
             Idle : 0,
@@ -445,18 +446,24 @@
                         // btnHoldResume.value = 'Hold';
                         btnHoldResume.disabled = false;
 
+                        core.videoPolicy.automaticallyAccept=true;
+                        core.videoPolicy.automaticallyInitiate=true;
+
                         if( call.remoteParams.videoEnabled === true ) {
                             var video = getVideo();
                             core.nativeVideoWindowId = video.window;
 
                             /* Add video policy to always ask and accept video call */
                             call.currentParams.videoEnabled=true;
-                            core.videoPolicy.automaticallyAccept=true;
-                            core.videoPolicy.automaticallyInitiate=true;
-
+                            
                             core.acceptCallUpdate(call, call.currentParams);
 
                             fn_videoView(true);
+                        } else {
+                            /* Add video policy to always ask and accept video call */
+                            call.currentParams.videoEnabled=false;
+                            
+                            core.acceptCallUpdate(call, call.currentParams);
                         }
 
                         break;
@@ -469,6 +476,20 @@
                             btnHoldResume.disabled = false;
                             gIsPausedByRemote = false;
                         }
+
+console.log('gIsVideoOnOffIng : ' + gIsVideoOnOffIng);
+console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
+
+                        if( gIsVideoOnOffIng ) {
+                            if( btnVideoOnOf.value == 'Video Off' ) {
+                                fn_videoView(true);
+                            } else {
+                                fn_videoView(false);
+                            }
+
+                            gIsVideoOnOffIng = false;
+                        }
+
                         break;
                     }
 
@@ -482,21 +503,22 @@
                     {
                         try
                         {
+                            gIsVideoOnOffIng = true;
                             var currentParams = call.currentParams;
                             if( call.remoteParams.videoEnabled === true ) {
                                 var video = getVideo();
                                 core.nativeVideoWindowId = video.window;
-
                                 currentParams.videoEnabled = true;
                                 core.acceptCallUpdate(call,currentParams);
-                                core.updateCall(call,currentParams);
 
-                                fn_videoView(true);
+                                // fn_videoView(true);
+                                btnVideoOnOf.value = 'Video Off';
                             } else {
                                 currentParams.videoEnabled = false;
                                 core.acceptCallUpdate(call,currentParams);
-                                core.updateCall(call,currentParams);
-                                fn_videoView(false);
+                                
+                                // fn_videoView(false);
+                                btnVideoOnOf.value = 'Video On';
                             }
                         }
                         catch (e)
@@ -706,21 +728,29 @@
 
         function sipVideoOnOff() {
             try {
-                var core = getCore();
-                var oCalls = core.currentCall;
-                var callParams = oCalls.currentParams;
 
-                if( callParams.videoEnabled ) {
+                gIsVideoOnOffIng = true;
+
+                var core = getCore();
+                // var oCalls = core.currentCall;
+                // var callParams = oCall.currentParams;
+                var callParams = core.createDefaultCallParameters();
+
+                if( btnVideoOnOf.value == 'Video Off' ) {
                     callParams.videoEnabled = false;
-                    core.updateCall(oCalls,callParams);
-                    fn_videoView(false);
+                    core.updateCall(oCall,callParams);
+
+                    btnVideoOnOf.value='Video On';
+                    //fn_videoView(false); //-- 오동작을 일으킴 --> StreamsRunning Event에서 수행해야됨.
                 } else {
                     var video = getVideo();
                     core.nativeVideoWindowId = video.window;
-                    
+
                     callParams.videoEnabled = true;
-                    core.updateCall(oCalls,callParams);
-                    fn_videoView(true);
+                    core.updateCall(oCall,callParams);
+
+                    btnVideoOnOf.value='Video Off';
+                    //fn_videoView(true); //-- 오동작을 일으킴 --> StreamsRunning Event에서 수행해야됨.
                 }
             } catch (e) {
                 console.log(e);
@@ -821,6 +851,8 @@
         function fn_test() {
             //location.replace ='http://www.naver.com';
             //alert(navigator.userAgent);
+            sipVideoOnOff();
+            return;
 
             var date = new Date();
 
