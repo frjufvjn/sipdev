@@ -11,7 +11,7 @@
       <script type='text/javascript' src="http://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.js"></script>
     <![endif]-->
     <title>Hansol Contact Center</title>
-    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <!--<script src="SIPml-api.js?svn=250" type="text/javascript"> </script>-->
 
     <!-- Styles -->
@@ -335,6 +335,8 @@
             addEvent(core,"referReceived",onReferReceived);
             addEvent(core,"transferStateChanged",onTransferStateChanged);
             addEvent(core,"callLogUpdated",onCallLogUpdated);
+            addEvent(core,"notifyPresenceReceived",onNotifyPresenceReceived);
+            addEvent(core,"newSubscriptionRequested",onNewSubscriptionRequested);
                
             /* Display logs information in the console */
             core.logHandler = function(level, message) {
@@ -608,6 +610,57 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
             console.log('------------------'+newCallState+'------------------');
         }
 
+        function onNotifyPresenceReceived(core, friend){
+            console.log('onNotifyPresenceReceived---------------');
+            fn_printFriendPresence(core,friend);
+        }
+
+        function onNewSubscriptionRequested(core, friend, url){
+            console.log('onNewSubscriptionRequested---------------');
+        }
+
+        function fn_changeActivity(activity){
+            try {
+                var core = getCore();
+
+                var presenceModel = core.presenceModel;
+                presenceModel.setActivity(activity, null); /*set my status with my activity*/
+                core.presenceModel = presenceModel; /*set the new presence model*/
+                // updateStatus('statusM',presenceModel.activity);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        function fn_printFriendPresence(core, friend) {
+            var model = friend.presenceModel;
+            // updateStatus('statusF', model.activity);
+            if(model !== null){
+                console.log("Basic status: " + model.basicStatus);
+                console.log("Activity: " + model.activity);
+                console.log("Activity type : " +model.activity.type);
+            } else {
+                console.log("Friend " + friend.name + " is offline.");
+            }
+        }
+
+        function fn_addFriend(addressStr){
+            try {
+                var friend = core.newFriendWithAddress(addressStr); /*creates friend object from addressStr*/
+            
+                friend.subscribesEnabled = true;  /*configure this friend to emit SUBSCRIBE message after being added to LinphoneCore*/
+                friend.incSubscribePolicy = 2; // Accept:2 // linphone.SubscribePolicy.Accept;  /* Accept incoming subscription request for this friend*/
+                core.addFriend(friend); /* add my friend to the buddy list, initiate SUBSCRIBE message*/
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        function sipPresenceChanged(selectedObj) {
+            console.log('selectedObj.value : ' + selectedObj.value);
+            fn_changeActivity(selectedObj.value);
+        }
+
         function sipAcceptCall() {
             
             var core = getCore();
@@ -669,6 +722,7 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
             if(address !== null) {
                 /* Start the call with the contact address*/
                 core.inviteAddressWithParams(address, callParams);
+
             }
             txtPhoneNumber.value = '';
         }
@@ -844,6 +898,13 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
             divGlassPanel.style.visibility = 'hidden';
         }
 
+        $(document).ready(function(){
+            $("#txtPassword").keydown(function(event) {
+                var key = (event.keyCode ? event.keyCode : event.which);
+                if (key == '13') sipRegister();
+            });
+        });
+
         function jlog( argMsg ) {
             console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n'+argMsg+'\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
         }
@@ -851,6 +912,9 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
         function fn_test() {
             //location.replace ='http://www.naver.com';
             //alert(navigator.userAgent);
+            
+            fn_addFriend('sip:jwpark8@sip.linphone.org');
+            return;
             sipVideoOnOff();
             return;
 
@@ -969,11 +1033,13 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
 								class="btn btn-danger" id="btnUnRegister" value="LogOut"
 								disabled onclick='sipUnRegister();' /></td>
 						</tr>
-                        <tr>
+                        
+                        <!--<tr>
                             <td colspan="3">
                                 <a class="btn" href="javascript:fn_test()">Test</a>
                             </td>
-                        </tr>
+                        </tr>-->
+
 						<!--<tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
@@ -993,6 +1059,20 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
                     </tr>-->
 
 					</table>
+                    &nbsp;
+                    <table style='width: 100%'>
+                        <tr>
+                            <td><label style="height: 100%"> Presence
+                            </label></td>
+                            <td>
+                                <select style="width: 100%; height: 100%" id="presence" onChange="javascript:sipPresenceChanged(this)">
+                                    <option value="1" selected="selected">OnLine</option>
+                                    <option value="3">Away</option>
+                                    <option value="0">OffLine</option>
+                                </select>    
+                            </td>
+                        </td>
+                    </table>
 				</div>
 			</div>
 			<div id="divCallCtrl" class="span7 well"
