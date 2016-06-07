@@ -163,11 +163,11 @@
         };
 
         window.onload = function () {
-            console.log("display_name : " + window.localStorage.getItem('org.doubango.identity.display_name'));
-            console.log("impi : " + window.localStorage.getItem('org.doubango.identity.impi'));
-            console.log("impu : " + window.localStorage.getItem('org.doubango.identity.impu'));
-            console.log("sec : " + window.localStorage.getItem('org.doubango.identity.password'));
-            console.log("realm : " + window.localStorage.getItem('org.doubango.identity.realm'));
+            console.log("display_name : " + window.localStorage.getItem('com.hansol.identity.display_name'));
+            console.log("impi : " + window.localStorage.getItem('com.hansol.identity.impi'));
+            console.log("impu : " + window.localStorage.getItem('com.hansol.identity.impu'));
+            console.log("sec : " + window.localStorage.getItem('com.hansol.identity.password'));
+            console.log("realm : " + window.localStorage.getItem('com.hansol.identity.realm'));
 
             window.console && window.console.info && window.console.info("location=" + window.location);
 
@@ -180,7 +180,7 @@
             divCallCtrl.onmousemove = onDivCallCtrlMouseMove;
 
             // set debug level
-            SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('org.doubango.expert.disable_debug') == "true") ? "error" : "info");
+            SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
 
             loadCredentials();
             loadCallOptions();
@@ -209,6 +209,13 @@
                 var s_mbwd = getPVal("mbwd"); // maxBandwidthUp (kbps)
                 var s_za = getPVal("za"); // ZeroArtifacts
                 var s_ndb = getPVal("ndb"); // NativeDebug
+console.log('s_webrtc_type : ' +s_webrtc_type );
+console.log('s_fps : ' +s_fps);
+console.log('s_mvs : ' +s_mvs);
+console.log('s_mbwu : ' +s_mbwu);
+console.log('s_mbwd : ' +s_mbwd);
+console.log('s_za : ' + s_za);
+console.log('s_ndb : ' +s_ndb);
 
                 if (s_webrtc_type) SIPml.setWebRtcType(s_webrtc_type);
 
@@ -315,8 +322,8 @@
         function loadCallOptions() {
             if (window.localStorage) {
                 var s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.call.phone_number'))) txtPhoneNumber.value = s_value;
-                bDisableVideo = (window.localStorage.getItem('org.doubango.expert.disable_video') == "true");
+                if ((s_value = window.localStorage.getItem('com.hansol.call.phone_number'))) txtPhoneNumber.value = s_value;
+                bDisableVideo = (window.localStorage.getItem('com.hansol.expert.disable_video') == "true");
 
                 txtCallStatus.innerHTML = '<i>Video ' + (bDisableVideo ? 'disabled' : 'enabled') + '</i>';
             }
@@ -324,8 +331,8 @@
 
         function saveCallOptions() {
             if (window.localStorage) {
-                window.localStorage.setItem('org.doubango.call.phone_number', txtPhoneNumber.value);
-                window.localStorage.setItem('org.doubango.expert.disable_video', bDisableVideo ? "true" : "false");
+                window.localStorage.setItem('com.hansol.call.phone_number', txtPhoneNumber.value);
+                window.localStorage.setItem('com.hansol.expert.disable_video', bDisableVideo ? "true" : "false");
             }
         }
 
@@ -333,11 +340,11 @@
             if (window.localStorage) {
                 // IE retuns 'null' if not defined
                 var s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.identity.display_name'))) txtDisplayName.value = s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.identity.impi'))) txtPrivateIdentity.value = s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.identity.impu'))) txtPublicIdentity.value = s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.identity.password'))) txtPassword.value = s_value;
-                if ((s_value = window.localStorage.getItem('org.doubango.identity.realm'))) txtRealm.value = s_value;
+                if ((s_value = window.localStorage.getItem('com.hansol.identity.display_name'))) txtDisplayName.value = s_value;
+                if ((s_value = window.localStorage.getItem('com.hansol.identity.impi'))) txtPrivateIdentity.value = s_value;
+                if ((s_value = window.localStorage.getItem('com.hansol.identity.impu'))) txtPublicIdentity.value = s_value;
+                if ((s_value = window.localStorage.getItem('com.hansol.identity.password'))) txtPassword.value = s_value;
+                if ((s_value = window.localStorage.getItem('com.hansol.identity.realm'))) txtRealm.value = s_value;
             }
             else {
                 //txtDisplayName.value = "005";
@@ -351,11 +358,11 @@
 
         function saveCredentials() {
             if (window.localStorage) {
-                window.localStorage.setItem('org.doubango.identity.display_name', txtDisplayName.value);
-                window.localStorage.setItem('org.doubango.identity.impi', txtDisplayName.value); // txtPrivateIdentity.value);
-                window.localStorage.setItem('org.doubango.identity.impu', "sip:"+txtDisplayName.value+"@cube-x19.hansol.com"); // txtPublicIdentity.value);
-                window.localStorage.setItem('org.doubango.identity.password', txtPassword.value);
-                window.localStorage.setItem('org.doubango.identity.realm', "cube-x19.hansol.com");
+                window.localStorage.setItem('com.hansol.identity.display_name', txtDisplayName.value);
+                window.localStorage.setItem('com.hansol.identity.impi', txtDisplayName.value); // txtPrivateIdentity.value);
+                window.localStorage.setItem('com.hansol.identity.impu', "sip:"+txtDisplayName.value+"@cube-x19.hansol.com"); // txtPublicIdentity.value);
+                window.localStorage.setItem('com.hansol.identity.password', txtPassword.value);
+                window.localStorage.setItem('com.hansol.identity.realm', "cube-x19.hansol.com");
             }
         };
 
@@ -363,16 +370,19 @@
         function sipRegister() {
             // catch exception for IE (DOM not ready)
             try {
-		$("#btnRegister").css("display","none");    
-		$("#btnUnRegister").css("display","block");    
-		$("#loginInfo").css("display", "none");
+/*
+        		$("#btnRegister").css("display","none");    
+        		$("#btnUnRegister").css("display","block");    
+        		$("#loginInfo").css("display", "none");
 
-		if (txtDisplayName.value == "9501")
-			$("#userInfo2").css("display", "block");
-		else
-			$("#userInfo").css("display", "block");
 
-		btnRegister.disabled = true;
+        		if (txtDisplayName.value == "9501")
+        			$("#userInfo2").css("display", "block");
+        		else
+        			$("#userInfo").css("display", "block");
+*/
+        		btnRegister.disabled = true;
+
                 if (!txtRealm.value || !txtPrivateIdentity.value || !txtPublicIdentity.value) {
 
                     // jw
@@ -386,6 +396,7 @@
                     */
                     return;
                 }
+
                 var o_impu = tsip_uri.prototype.Parse(txtPublicIdentity.value);
                 if (!o_impu || !o_impu.s_user_name || !o_impu.s_host) {
                     txtRegStatus.innerHTML = "<b>[" + txtPublicIdentity.value + "] is not a valid Public identity</b>";
@@ -402,7 +413,7 @@
                 saveCredentials();
 
                 // update debug level to be sure new values will be used if the user haven't updated the page
-                SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('org.doubango.expert.disable_debug') == "true") ? "error" : "info");
+                SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
 
                 // create SIP stack
                 oSipStack = new SIPml.Stack({
@@ -411,18 +422,18 @@
                     impu: txtPublicIdentity.value,
                     password: txtPassword.value,
                     display_name: txtDisplayName.value,
-                    websocket_proxy_url: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.websocket_server_url') : null),
-                    outbound_proxy_url: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.sip_outboundproxy_url') : null),
-                    ice_servers: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.ice_servers') : null),
-                    enable_rtcweb_breaker: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.enable_rtcweb_breaker') == "true" : false),
+                    websocket_proxy_url: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.websocket_server_url') : null),
+                    outbound_proxy_url: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.sip_outboundproxy_url') : null),
+                    ice_servers: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.ice_servers') : null),
+                    enable_rtcweb_breaker: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.enable_rtcweb_breaker') == "true" : false),
                     events_listener: { events: '*', listener: onSipEventStack },
-                    enable_early_ims: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.disable_early_ims') != "true" : true), // Must be true unless you're using a real IMS network
-                    enable_media_stream_cache: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.enable_media_caching') == "true" : false),
-                    bandwidth: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('org.doubango.expert.bandwidth')) : null), // could be redefined a session-level
-                    video_size: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('org.doubango.expert.video_size')) : null), // could be redefined a session-level
+                    enable_early_ims: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.disable_early_ims') != "true" : true), // Must be true unless you're using a real IMS network
+                    enable_media_stream_cache: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.enable_media_caching') == "true" : false),
+                    bandwidth: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.bandwidth')) : null), // could be redefined a session-level
+                    video_size: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.video_size')) : null), // could be redefined a session-level
                     sip_headers: [
                             { name: 'User-Agent', value: 'IM-client/OMA1.0 sipML5-v1.2016.03.04' },
-                            { name: 'Organization', value: 'Doubango Telecom' }
+                            { name: 'Organization', value: 'Hansol Inticube' }
                     ]
                 }
                 );
@@ -439,11 +450,11 @@
 
         // sends SIP REGISTER (expires=0) to logout
         function sipUnRegister() {
-	    $("#btnRegister").css("display","block");    
+	    /*$("#btnRegister").css("display","block");    
 	    $("#btnUnRegister").css("display","none");    
 	    $("#loginInfo").css("display", "block");
 	    $("#userInfo").css("display", "none");
-
+        */
             if (oSipStack) {
                 oSipStack.stop(); // shutdown all sessions
             }
@@ -471,8 +482,8 @@
 		btnHangUp.disabled = false;
 
                 if (window.localStorage) {
-                    oConfigCall.bandwidth = tsk_string_to_object(window.localStorage.getItem('org.doubango.expert.bandwidth')); // already defined at stack-level but redifined to use latest values
-                    oConfigCall.video_size = tsk_string_to_object(window.localStorage.getItem('org.doubango.expert.video_size')); // already defined at stack-level but redifined to use latest values
+                    oConfigCall.bandwidth = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.bandwidth')); // already defined at stack-level but redifined to use latest values
+                    oConfigCall.video_size = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.video_size')); // already defined at stack-level but redifined to use latest values
                 }
 
                 // create call session
@@ -672,7 +683,7 @@
                 if (evt.keyCode == 65 || evt.keyCode == 86) { // A (65) or V (86)
                     bDisableVideo = (evt.keyCode == 65);
                     txtCallStatus.innerHTML = '<i>Video ' + (bDisableVideo ? 'disabled' : 'enabled') + '</i>';
-                    window.localStorage.setItem('org.doubango.expert.disable_video', bDisableVideo);
+                    window.localStorage.setItem('com.hansol.expert.disable_video', bDisableVideo);
                 }
             }
         }
@@ -721,7 +732,7 @@
 
         function uiDisableCallOptions() {
             if (window.localStorage) {
-                window.localStorage.setItem('org.doubango.expert.disable_callbtn_options', 'true');
+                window.localStorage.setItem('com.hansol.expert.disable_callbtn_options', 'true');
                 uiBtnCallSetText('Call');
                 alert('Use expert view to enable the options again (/!\\requires re-loading the page)');
             }
@@ -731,7 +742,7 @@
             switch (s_text) {
                 case "Call":
                     {
-                        var bDisableCallBtnOptions = (window.localStorage && window.localStorage.getItem('org.doubango.expert.disable_callbtn_options') == "true");
+                        var bDisableCallBtnOptions = (window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_callbtn_options') == "true");
                         btnCall.value = btnCall.innerHTML = bDisableCallBtnOptions ? 'Call' : 'Call <span id="spanCaret" class="caret">';
                         btnCall.setAttribute("class", bDisableCallBtnOptions ? "btn btn-primary" : "btn btn-primary dropdown-toggle");
                         btnCall.onclick = bDisableCallBtnOptions ? function () { sipCall(bDisableVideo ? 'call-audio' : 'call-audiovideo'); } : null;
@@ -1138,6 +1149,24 @@
             }
         }
 
+        function fn_test() {
+            try {
+                var query = window.location.search.substring(1);
+
+                var vars = query.split('&');
+                for (var i = 0; i < vars.length; i++) {
+                    var pair = vars[i].split('=');
+                    // if (decodeURIComponent(pair[0]) === PName) {
+                        console.log(i+' : ' +decodeURIComponent(pair[1]));
+                        // return decodeURIComponent(pair[1]);
+                    // }
+                }
+            } catch (e) {
+                console.log(e);
+            }
+            
+        }
+
     </script>
 </head>
 <body style="cursor:wait">
@@ -1244,9 +1273,14 @@
                     </tr>
                     <tr>
                         <td colspan="3">
-                            <a class="btn" href="./expert.htm" target="_blank">Setting</a>
+                            <a class="btn" href="javascript:fn_test()">Test</a>
                         </td>
                     </tr>
+                    <!--<tr>
+                        <td colspan="3">
+                            <a class="btn" href="./expert.htm" target="_blank">Setting</a>
+                        </td>
+                    </tr>-->
                     <!-- jw: hidden  -->
                     
                     <!--<tr>
