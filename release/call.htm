@@ -156,6 +156,8 @@
         var viewVideoLocal, viewVideoRemote, viewLocalScreencast; // <video> (webrtc) or <div> (webrtc4all)
         var oConfigCall;
         var oReadyStateTimer;
+        var gServerInfo;
+        var gIsSimpleRegister = false;
 
         C =
         {
@@ -163,11 +165,34 @@
         };
 
         window.onload = function () {
-            console.log("display_name : " + window.localStorage.getItem('com.hansol.identity.display_name'));
-            console.log("impi : " + window.localStorage.getItem('com.hansol.identity.impi'));
-            console.log("impu : " + window.localStorage.getItem('com.hansol.identity.impu'));
-            console.log("sec : " + window.localStorage.getItem('com.hansol.identity.password'));
-            console.log("realm : " + window.localStorage.getItem('com.hansol.identity.realm'));
+
+            if(gIsSimpleRegister) {
+                gServerInfo = {
+                    displayName : '',
+                    privateIdentity : '',
+                    publicIdentity : '',
+                    authKey : '',
+                    realm : 'sip2sip.info',
+                    enableRtcwebBreaker : true,
+                    websocketServerUrl : '',
+                    outboundProxyUrl : 'udp://proxy.sipthor.net:5060',
+                    iceServers : '[]',
+                    isDebug : false
+                };
+            } else {
+                gServerInfo = {
+                    displayName : '',
+                    privateIdentity : '',
+                    publicIdentity : '',
+                    authKey : '',
+                    realm : 'cube-x19.hansol.com',
+                    enableRtcwebBreaker : true,
+                    websocketServerUrl : 'wss://10.1.12.193:10081',
+                    outboundProxyUrl : '',
+                    iceServers : '[]',
+                    isDebug : false
+                };
+            }
 
             window.console && window.console.info && window.console.info("location=" + window.location);
 
@@ -180,7 +205,9 @@
             divCallCtrl.onmousemove = onDivCallCtrlMouseMove;
 
             // set debug level
-            SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
+            SIPml.setDebugLevel(gServerInfo.isDebug ? "info" : "error");
+
+            window.localStorage.setItem('com.hansol.expert.ice_servers', gServerInfo.iceServers);
 
             loadCredentials();
             loadCallOptions();
@@ -209,13 +236,6 @@
                 var s_mbwd = getPVal("mbwd"); // maxBandwidthUp (kbps)
                 var s_za = getPVal("za"); // ZeroArtifacts
                 var s_ndb = getPVal("ndb"); // NativeDebug
-console.log('s_webrtc_type : ' +s_webrtc_type );
-console.log('s_fps : ' +s_fps);
-console.log('s_mvs : ' +s_mvs);
-console.log('s_mbwu : ' +s_mbwu);
-console.log('s_mbwd : ' +s_mbwd);
-console.log('s_za : ' + s_za);
-console.log('s_ndb : ' +s_ndb);
 
                 if (s_webrtc_type) SIPml.setWebRtcType(s_webrtc_type);
 
@@ -370,36 +390,21 @@ console.log('s_ndb : ' +s_ndb);
         function sipRegister() {
             // catch exception for IE (DOM not ready)
             try {
-/*
-        		$("#btnRegister").css("display","none");    
-        		$("#btnUnRegister").css("display","block");    
-        		$("#loginInfo").css("display", "none");
 
-
-        		if (txtDisplayName.value == "9501")
-        			$("#userInfo2").css("display", "block");
-        		else
-        			$("#userInfo").css("display", "block");
-*/
         		btnRegister.disabled = true;
 
-                if (!txtRealm.value || !txtPrivateIdentity.value || !txtPublicIdentity.value) {
+                if (!txtDisplayName.value || !txtPassword.value) {
 
-                    // jw
-                    txtRealm.value = "cube-x19.hansol.com";
-                    txtPrivateIdentity.value = txtDisplayName.value;
-                    txtPublicIdentity.value = "sip:"+txtDisplayName.value+"@cube-x19.hansol.com";
-
-                    /* jw
                     txtRegStatus.innerHTML = '<b>Please fill madatory fields (*)</b>';
                     btnRegister.disabled = false;
-                    */
+                    
                     return;
                 }
 
-                var o_impu = tsip_uri.prototype.Parse(txtPublicIdentity.value);
+                var publicIdentityStr = 'sip:' + txtDisplayName.value + '@' + gServerInfo.realm;
+                var o_impu = tsip_uri.prototype.Parse(publicIdentityStr);
                 if (!o_impu || !o_impu.s_user_name || !o_impu.s_host) {
-                    txtRegStatus.innerHTML = "<b>[" + txtPublicIdentity.value + "] is not a valid Public identity</b>";
+                    txtRegStatus.innerHTML = "<b>[" + publicIdentityStr + "] is not a valid Public identity</b>";
                     btnRegister.disabled = false;
                     return;
                 }
@@ -413,27 +418,37 @@ console.log('s_ndb : ' +s_ndb);
                 saveCredentials();
 
                 // update debug level to be sure new values will be used if the user haven't updated the page
-                SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
+                //-- SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
+                SIPml.setDebugLevel(gServerInfo.isDebug ? "info" : "error");
+                
+console.log('gServerInfo.realm : ' +gServerInfo.realm);
+console.log('txtDisplayName.value : ' +txtDisplayName.value);
+console.log('publicIdentityStr : ' +publicIdentityStr);
+console.log('txtDisplayName.value : ' +txtDisplayName.value);
+console.log('websocketServerUrl : ' + (gServerInfo.websocketServerUrl ? gServerInfo.websocketServerUrl : null));
+console.log('outbound_proxy_url : ' +(gServerInfo.outboundProxyUrl ? gServerInfo.outboundProxyUrl : null));
+console.log('ice_servers : ' + (window.localStorage ? window.localStorage.getItem('org.doubango.expert.ice_servers') : null));
+console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true : false));
 
                 // create SIP stack
                 oSipStack = new SIPml.Stack({
-                    realm: txtRealm.value,
-                    impi: txtPrivateIdentity.value,
-                    impu: txtPublicIdentity.value,
+                    realm: gServerInfo.realm,
+                    impi: txtDisplayName.value,
+                    impu: publicIdentityStr,
                     password: txtPassword.value,
                     display_name: txtDisplayName.value,
-                    websocket_proxy_url: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.websocket_server_url') : null),
-                    outbound_proxy_url: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.sip_outboundproxy_url') : null),
-                    ice_servers: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.ice_servers') : null),
-                    enable_rtcweb_breaker: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.enable_rtcweb_breaker') == "true" : false),
+                    websocket_proxy_url: (gServerInfo.websocketServerUrl ? gServerInfo.websocketServerUrl : null),
+                    outbound_proxy_url: (gServerInfo.outboundProxyUrl ? gServerInfo.outboundProxyUrl : null),
+                    ice_servers: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.ice_servers') : null),
+                    enable_rtcweb_breaker: (gServerInfo.enableRtcwebBreaker ? true : false),
                     events_listener: { events: '*', listener: onSipEventStack },
-                    enable_early_ims: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.disable_early_ims') != "true" : true), // Must be true unless you're using a real IMS network
-                    enable_media_stream_cache: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.enable_media_caching') == "true" : false),
-                    bandwidth: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.bandwidth')) : null), // could be redefined a session-level
-                    video_size: (window.localStorage ? tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.video_size')) : null), // could be redefined a session-level
+                    enable_early_ims: (false), // Must be true unless you're using a real IMS network
+                    enable_media_stream_cache: (true),
+                    bandwidth: (null), // could be redefined a session-level
+                    video_size: (null), // could be redefined a session-level
                     sip_headers: [
                             { name: 'User-Agent', value: 'IM-client/OMA1.0 sipML5-v1.2016.03.04' },
-                            { name: 'Organization', value: 'Hansol Inticube' }
+                            { name: 'Organization', value: 'Doubango Telecom' }
                     ]
                 }
                 );
@@ -462,45 +477,49 @@ console.log('s_ndb : ' +s_ndb);
 
         // makes a call (SIP INVITE)
         function sipCall(s_type) {
-	    $("#confirmModal").modal("hide");
+            try {
+                $("#confirmModal").modal("hide");
 
-            if (oSipStack && !oSipSessionCall && !tsk_string_is_null_or_empty(txtPhoneNumber.value)) {
-                if (s_type == 'call-screenshare') {
-                    if (!SIPml.isScreenShareSupported()) {
-                        alert('Screen sharing not supported. Are you using chrome 26+?');
-                        return;
-                    }
-                    if (!location.protocol.match('https')) {
-                        if (confirm("Screen sharing requires https://. Do you want to be redirected?")) {
-                            sipUnRegister();
-                            window.location = 'https://ns313841.ovh.net/call.htm';
+                if (oSipStack && !oSipSessionCall && !tsk_string_is_null_or_empty(txtPhoneNumber.value)) {
+                    if (s_type == 'call-screenshare') {
+                        if (!SIPml.isScreenShareSupported()) {
+                            alert('Screen sharing not supported. Are you using chrome 26+?');
+                            return;
                         }
+                        if (!location.protocol.match('https')) {
+                            if (confirm("Screen sharing requires https://. Do you want to be redirected?")) {
+                                sipUnRegister();
+                                window.location = 'https://ns313841.ovh.net/call.htm';
+                            }
+                            return;
+                        }
+                    }
+                    btnCall.disabled = true;
+                    btnHangUp.disabled = false;
+
+                    if (window.localStorage) {
+                        oConfigCall.bandwidth = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.bandwidth')); // already defined at stack-level but redifined to use latest values
+                        oConfigCall.video_size = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.video_size')); // already defined at stack-level but redifined to use latest values
+                    }
+
+                    // create call session
+                    oSipSessionCall = oSipStack.newSession(s_type, oConfigCall);
+                    // make call
+                    if (oSipSessionCall.call(txtPhoneNumber.value) != 0) {
+                        oSipSessionCall = null;
+                        txtCallStatus.value = 'Failed to make call';
+                        btnCall.disabled = false;
+                        btnHangUp.disabled = true;
                         return;
                     }
+                    saveCallOptions();
                 }
-                btnCall.disabled = true;
-		btnHangUp.disabled = false;
-
-                if (window.localStorage) {
-                    oConfigCall.bandwidth = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.bandwidth')); // already defined at stack-level but redifined to use latest values
-                    oConfigCall.video_size = tsk_string_to_object(window.localStorage.getItem('com.hansol.expert.video_size')); // already defined at stack-level but redifined to use latest values
+                else if (oSipSessionCall) {
+                    txtCallStatus.innerHTML = '<i>Connecting...</i>';
+                    oSipSessionCall.accept(oConfigCall);
                 }
-
-                // create call session
-                oSipSessionCall = oSipStack.newSession(s_type, oConfigCall);
-                // make call
-                if (oSipSessionCall.call(txtPhoneNumber.value) != 0) {
-                    oSipSessionCall = null;
-                    txtCallStatus.value = 'Failed to make call';
-                    btnCall.disabled = false;
-                    btnHangUp.disabled = true;
-                    return;
-                }
-                saveCallOptions();
-            }
-            else if (oSipSessionCall) {
-                txtCallStatus.innerHTML = '<i>Connecting...</i>';
-                oSipSessionCall.accept(oConfigCall);
+            } catch (e) {
+                console.log('####' + e);
             }
         }
 
@@ -802,7 +821,7 @@ console.log('s_ndb : ' +s_ndb);
         // Callback function for SIP Stacks
         function onSipEventStack(e /*SIPml.Stack.Event*/) {
             tsk_utils_log_info('==stack event = ' + e.type);
-            console.log('==stack event = ' + e.type);
+            console.log('-------------['+e.type+']-------------' );
             switch (e.type) {
                 case 'started':
                     {
@@ -895,7 +914,7 @@ console.log('s_ndb : ' +s_ndb);
         // Callback function for SIP sessions (INVITE, REGISTER, MESSAGE...)
         function onSipEventSession(e /* SIPml.Session.Event */) {
             tsk_utils_log_info('==session event = ' + e.type);
-            console.log('==session event = ' + e.type);
+            console.log('###############['+e.type+']###############' );
             switch (e.type) {
                 case 'connecting': case 'connected':
                     {
@@ -1271,16 +1290,16 @@ console.log('s_ndb : ' +s_ndb);
                             <input type="button" class="btn btn-danger" id="btnUnRegister" value="LogOut" disabled onclick='sipUnRegister();'/>
                         </td>
                     </tr>
-                    <tr>
+                    <!--<tr>
                         <td colspan="3">
                             <a class="btn" href="javascript:fn_test()">Test</a>
                         </td>
-                    </tr>
-                    <!--<tr>
+                    </tr>-->
+                    <tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
                         </td>
-                    </tr>-->
+                    </tr>
                     <!-- jw: hidden  -->
                     
                     <!--<tr>
