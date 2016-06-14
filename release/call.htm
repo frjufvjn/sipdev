@@ -157,7 +157,7 @@
         var oConfigCall;
         var oReadyStateTimer;
         var gServerInfo;
-        var gIsSimpleRegister = false;
+        var gIsSimpleRegister = true;
 
         C =
         {
@@ -420,14 +420,14 @@
                 // update debug level to be sure new values will be used if the user haven't updated the page
                 //-- SIPml.setDebugLevel((window.localStorage && window.localStorage.getItem('com.hansol.expert.disable_debug') == "true") ? "error" : "info");
                 SIPml.setDebugLevel(gServerInfo.isDebug ? "info" : "error");
-                
+
 console.log('gServerInfo.realm : ' +gServerInfo.realm);
 console.log('txtDisplayName.value : ' +txtDisplayName.value);
 console.log('publicIdentityStr : ' +publicIdentityStr);
 console.log('txtDisplayName.value : ' +txtDisplayName.value);
 console.log('websocketServerUrl : ' + (gServerInfo.websocketServerUrl ? gServerInfo.websocketServerUrl : null));
 console.log('outbound_proxy_url : ' +(gServerInfo.outboundProxyUrl ? gServerInfo.outboundProxyUrl : null));
-console.log('ice_servers : ' + (window.localStorage ? window.localStorage.getItem('org.doubango.expert.ice_servers') : null));
+console.log('ice_servers : ' + (window.localStorage ? window.localStorage.getItem('com.hansol.expert.ice_servers') : null));
 console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true : false));
 
                 // create SIP stack
@@ -439,7 +439,7 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                     display_name: txtDisplayName.value,
                     websocket_proxy_url: (gServerInfo.websocketServerUrl ? gServerInfo.websocketServerUrl : null),
                     outbound_proxy_url: (gServerInfo.outboundProxyUrl ? gServerInfo.outboundProxyUrl : null),
-                    ice_servers: (window.localStorage ? window.localStorage.getItem('org.doubango.expert.ice_servers') : null),
+                    ice_servers: (window.localStorage ? window.localStorage.getItem('com.hansol.expert.ice_servers') : null),
                     enable_rtcweb_breaker: (gServerInfo.enableRtcwebBreaker ? true : false),
                     events_listener: { events: '*', listener: onSipEventStack },
                     enable_early_ims: (false), // Must be true unless you're using a real IMS network
