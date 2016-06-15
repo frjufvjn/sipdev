@@ -183,7 +183,7 @@
             uiBtnCallSetText("Call");
 
             // is using sip.linphone.org accout
-            gIsSimpleRegister = false;
+            gIsSimpleRegister = true;
 
             // is using linphone core log 
             gIsCoreLogView = true;
@@ -626,6 +626,7 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
         function onMessageReceived(core, chatRoom, chatMsg) {
             // updateStatus('receivedMsg', chatMsg.text);
             console.log(chatMsg.text);
+            document.getElementById('chatFrame').contentWindow.makeMessage('receive', chatMsg.text);
         }
 
         function fn_changeActivity(activity){
@@ -824,13 +825,14 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
             fn_chatView(true);
         }
 
-        function sipChatSendMessage() {
+        function sipChatSendMessage(argMsg) {
+            console.log('sipChatSendMessage Call ['+argMsg+']');
             var core = getCore();
 
             /* Get the chat room */
             var chatRoom = core.getChatRoomFromUri('sip:' + txtPhoneNumber.value + '@' + gServerAddr);
             /* Create the chat message, */
-            var chatMsg = chatRoom.newMessage(txtChatInput.value);
+            var chatMsg = chatRoom.newMessage(argMsg);
             /* add the callback for message state change, */
             addEvent(chatMsg, "msgStateChanged", onMsgStateChanged);
             /* and sent it */
@@ -913,8 +915,12 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
         function fn_chatView( isOpen ) {
             if(isOpen) {
                 divChat.style.opacity = 1;
+                divChat.style.width = '100%';
+                divChat.style.height = '400px';
             } else {
                 divChat.style.opacity = 0;
+                divChat.style.width = '0px';
+                divChat.style.height = '0px';
             }
         }
 
@@ -1157,8 +1163,9 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
 					</tr>
                     <tr>
                         <td align='center'>
-                            <div id='divChat' style='opacity: 0; margin-top: 0px'>
-                                <input type="text" style="width: 100%; height: 100%" id="txtChatInput" value="" placeholder="" />
+                            <div id='divChat' style='opacity: 0; width:0px; height:0px'>
+                                <!--<input type="text" style="width: 100%; height: 100%" id="txtChatInput" value="" placeholder="" />-->
+                                <iframe id="chatFrame" src="./chat_ui.html" style='width:100%; height:100%;' frameBorder='0'></iframe>
                             </div>
                         </td>
                     </tr>
