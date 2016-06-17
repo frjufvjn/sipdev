@@ -316,6 +316,7 @@
                     
                     uiOnConnectionEvent(false,false);
                     txtCallStatus.innerHTML = '';
+                    fn_chatView(false);
                 } else {
                     updateStatus('txtRegStatus','<b>LogOut failed !!</b>');
                 }
@@ -656,6 +657,7 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
 
         function fn_addFriend(addressStr){
             try {
+                var core = getCore();
                 var friend = core.newFriendWithAddress(addressStr); /*creates friend object from addressStr*/
             
                 friend.subscribesEnabled = true;  /*configure this friend to emit SUBSCRIBE message after being added to LinphoneCore*/
@@ -827,16 +829,20 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
 
         function sipChatSendMessage(argMsg) {
             console.log('sipChatSendMessage Call ['+argMsg+']');
-            var core = getCore();
+            try {
+                var core = getCore();
 
-            /* Get the chat room */
-            var chatRoom = core.getChatRoomFromUri('sip:' + txtPhoneNumber.value + '@' + gServerAddr);
-            /* Create the chat message, */
-            var chatMsg = chatRoom.newMessage(argMsg);
-            /* add the callback for message state change, */
-            addEvent(chatMsg, "msgStateChanged", onMsgStateChanged);
-            /* and sent it */
-            chatRoom.sendChatMessage(chatMsg);
+                /* Get the chat room */
+                var chatRoom = core.getChatRoomFromUri('sip:' + txtPhoneNumber.value + '@' + gServerAddr);
+                /* Create the chat message, */
+                var chatMsg = chatRoom.newMessage(argMsg);
+                /* add the callback for message state change, */
+                addEvent(chatMsg, "msgStateChanged", onMsgStateChanged);
+                /* and sent it */
+                chatRoom.sendChatMessage(chatMsg);
+            } catch (e) {
+                console.log(e);
+            }
         }
 
         function uiOnConnectionEvent(b_connected, b_connecting) { // should be enum: connecting, connected, terminating, terminated
@@ -1079,11 +1085,11 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
 								disabled onclick='sipUnRegister();' /></td>
 						</tr>
                         
-                        <!--<tr>
+                        <tr>
                             <td colspan="3">
                                 <a class="btn" href="javascript:fn_test()">Test</a>
                             </td>
-                        </tr>-->
+                        </tr>
 
 						<!--<tr>
                         <td colspan="3">

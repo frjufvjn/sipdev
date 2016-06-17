@@ -148,7 +148,7 @@
 
         var sTransferNumber;
         var oRingTone, oRingbackTone;
-        var oSipStack, oSipSessionRegister, oSipSessionCall, oSipSessionTransferCall;
+        var oSipStack, oSipSessionRegister, oSipSessionCall, oSipSessionTransferCall, oSipSessionMessage;
         var videoRemote, videoLocal, audioRemote;
         var bFullScreen = false;
         var oNotifICall;
@@ -158,6 +158,7 @@
         var oReadyStateTimer;
         var gServerInfo;
         var gIsSimpleRegister = true;
+        var gRemoteMessageUser;
 
         C =
         {
@@ -177,7 +178,7 @@
                     websocketServerUrl : '',
                     outboundProxyUrl : 'udp://proxy.sipthor.net:5060',
                     iceServers : '[]',
-                    isDebug : false
+                    isDebug : true
                 };
             } else {
                 gServerInfo = {
@@ -472,6 +473,7 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
         */
             if (oSipStack) {
                 oSipStack.stop(); // shutdown all sessions
+                sipOpenChat(false);
             }
         }
 
@@ -606,6 +608,53 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
             if (oSipSessionCall) {
                 txtCallStatus.innerHTML = '<i>Terminating the call...</i>';
                 oSipSessionCall.hangup({ events_listener: { events: '*', listener: onSipEventSession } });
+            }
+        }
+
+        // SIP MESSAGE SEND 
+        function sipMessageSend(argTargetAddrStr, argMsg) {
+            try {
+                console.log('argMsg:['+argMsg+']');
+
+                oSipSessionMessage = oSipStack.newSession('message', { events_listener: { events: '*', listener: onSipEventSession } });
+                oSipSessionMessage.send(
+                    argTargetAddrStr,
+                    argMsg,
+                    'text/plain;charset=utf8',
+                    {
+                        sip_caps: [
+                            { name: '+g.oma.sip-im' },
+                            { name: '+sip.ice' },
+                            { name: 'language', value: '\"en,fr\"' }
+                        ],
+                        sip_headers: [
+                            { name: 'What', value: 'Sending SMS' },
+                            { name: 'My-Organization', value: 'Doubango Telecom' }
+                        ]
+                    }
+                );
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        function wrapperSipMessageSend(argMsg) {
+            gRemoteMessageUser = txtPhoneNumber.value;
+            if(gRemoteMessageUser.length < 1) return;
+            var targetAddrStr = 'sip:' + gRemoteMessageUser + '@' + gServerInfo.realm;
+            
+            sipMessageSend(targetAddrStr, argMsg);
+        }
+
+        function sipOpenChat(isOpen) {
+            if(isOpen) {
+                divChat.style.opacity = 1;
+                divChat.style.width = '100%';
+                divChat.style.height = '400px';
+            } else {
+                divChat.style.opacity = 0;
+                divChat.style.width = '0px';
+                divChat.style.height = '0px';
             }
         }
 
@@ -892,8 +941,36 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                         break;
                     }
 
+                case 'i_new_message' :
+                    {
+                        try {
+                            e.newSession.accept();
+
+                            console.log(e.newSession.getRemoteUri());
+                            console.log(e.newSession.getRemoteFriendlyName());
+                            console.log(e.getSipResponseCode());
+                            console.log(e.getContentString());
+                            console.log(e.getContentType());
+
+                            sipOpenChat(true);
+                            gRemoteMessageUser = e.newSession.getRemoteFriendlyName();
+                            txtPhoneNumber.value = gRemoteMessageUser;
+                            console.log(e.getContentString());
+                            document.getElementById('chatFrame').contentWindow.makeMessage('receive', e.getContentString());
+
+                            
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    }
+
                 case 'm_permission_requested':
                     {
+                        // 'i_new_message' 올때 이 이벤트를 타는 예외사항이 있어서...
+                        if( e.getContentType() == 'text/plain' ) {
+                            return;
+                        }
+
                         divGlassPanel.style.visibility = 'visible';
                         break;
                     }
@@ -963,6 +1040,9 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                         else if (e.session == oSipSessionCall) {
                             uiCallTerminated(e.description);
                         }
+                        else if (e.session == oSipSessionMessage) {
+                            oSipSessionMessage = null;
+                        }
                         break;
                     } // 'terminating' | 'terminated'
 
@@ -1017,6 +1097,10 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                                 startRingbackTone();
                                 txtCallStatus.innerHTML = '<i>Remote ringing...</i>';
                             }
+                        }
+
+                        if (e.session == oSipSessionMessage) {
+                            console.log('Send SIP MESSAGE...');
                         }
                         break;
                     }
@@ -1170,16 +1254,7 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
 
         function fn_test() {
             try {
-                var query = window.location.search.substring(1);
-
-                var vars = query.split('&');
-                for (var i = 0; i < vars.length; i++) {
-                    var pair = vars[i].split('=');
-                    // if (decodeURIComponent(pair[0]) === PName) {
-                        console.log(i+' : ' +decodeURIComponent(pair[1]));
-                        // return decodeURIComponent(pair[1]);
-                    // }
-                }
+                sipMessageSend('sip:9501@cube-x19.hansol.com','test!!!!!!!!!!!!!!!!!!');
             } catch (e) {
                 console.log(e);
             }
@@ -1273,7 +1348,7 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                         </td>
                         <td>
                             <input type="text" style="width: 100%; height: 100%" id="txtDisplayName" value=""
-                                   placeholder="e.g. John Doe" />
+                                   placeholder="" />
                         </td>
                     </tr>
                     <tr>
@@ -1290,16 +1365,16 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                             <input type="button" class="btn btn-danger" id="btnUnRegister" value="LogOut" disabled onclick='sipUnRegister();'/>
                         </td>
                     </tr>
-                    <!--<tr>
+                    <tr>
                         <td colspan="3">
                             <a class="btn" href="javascript:fn_test()">Test</a>
                         </td>
-                    </tr>-->
-                    <tr>
+                    </tr>
+                    <!--<tr>
                         <td colspan="3">
                             <a class="btn" href="./expert.htm" target="_blank">Setting</a>
                         </td>
-                    </tr>
+                    </tr>-->
                     <!-- jw: hidden  -->
                     
                     <!--<tr>
@@ -1377,6 +1452,14 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                     </tr>
                     <tr>
                         <td align='center'>
+                            <div id='divChat' style='opacity: 0; width:0px; height:0px'>
+                                <!--<input type="text" style="width: 100%; height: 100%" id="txtChatInput" value="" placeholder="" />-->
+                                <iframe id="chatFrame" src="./chat_ui_sipml.html" style='width:100%; height:100%;' frameBorder='0'></iframe>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center'>
                             <div id='divCallOptions' class='call-options' style='opacity: 0; margin-top: 0px'>
                                 <input type="button" class="btn" style="" id="btnFullScreen" value="FullScreen" disabled onclick='toggleFullScreen();' /> &nbsp;
                                 <input type="button" class="btn" style="" id="btnMute" value="Mute" onclick='sipToggleMute();' /> &nbsp;
@@ -1430,7 +1513,7 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
     <ul id="ulCallOptions" class="dropdown-menu" style="visibility:hidden">
         <li><a href="#" onclick='sipCall("call-audio");'>Audio</a></li>
         <li><a href="#" onclick='sipCall("call-audiovideo");'>Video</a></li>
-        <li id='liScreenShare'><a href="#" onclick='sipShareScreen();'>Screen Share</a></li>
+        <li><a href="#" onclick='sipOpenChat(true);'>Chat</a></li>
         <li class="divider"></li>
         <li><a href="#" onclick='uiDisableCallOptions();'><b>Disable these options</b></a></li>
     </ul>
