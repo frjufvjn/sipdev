@@ -178,7 +178,7 @@
                     websocketServerUrl : '',
                     outboundProxyUrl : 'udp://proxy.sipthor.net:5060',
                     iceServers : '[]',
-                    isDebug : true
+                    isDebug : false
                 };
             } else {
                 gServerInfo = {
@@ -1251,6 +1251,13 @@ console.log('enable_rtcweb_breaker : ' +(gServerInfo.enableRtcwebBreaker ? true 
                     }
             }
         }
+
+        $(document).ready(function(){
+            $("#txtPassword").keydown(function(event) {
+                var key = (event.keyCode ? event.keyCode : event.which);
+                if (key == '13') sipRegister();
+            });
+        });
 
         function fn_test() {
             try {
