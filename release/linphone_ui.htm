@@ -142,6 +142,7 @@
         var gIsCoreLogView = true;
         var gIsCallRefered = false;
         var gIsVideoOnOffIng = false;
+        var gIsCahtOpen = false;
 
         var CallState = {
             Idle : 0,
@@ -183,14 +184,14 @@
             uiBtnCallSetText("Call");
 
             // is using sip.linphone.org accout
-            gIsSimpleRegister = true;
+            gIsSimpleRegister = false;
 
             // is using linphone core log 
             gIsCoreLogView = true;
 
             if( !gIsSimpleRegister ) {
-                gServerAddr = '10.1.15.130';
-                gProxyServerAddr = 'cube-x19.hansol.com';
+                gServerAddr = 'cube-x19.hansol.com';
+                gProxyServerAddr = '10.1.15.130';
                 gIsOutbandProxy = true;
                 gTransportType = 0;
             } else {
@@ -248,8 +249,6 @@
 
             var username = txtDisplayName.value;
             var password = txtPassword.value;
-            var server = gServerAddr; /* proxy server */
-            var domain = gProxyServerAddr; /* domain */
 
             if( !gIsCoreLoaded) {
                 this.loadCore();
@@ -270,22 +269,12 @@
             var account = username;
             var password = password;
             
-            var proxy = server;
             var address = core.newAddress(proxyConfig.identity);
             address.username = account;
 
-            address.domain = domain;
+            address.domain = gServerAddr;
             proxyConfig.identity = address.asString();
-
-            if (proxy !== null && proxy !== '') {
-                if( !gIsSimpleRegister ) {
-                    proxyConfig.serverAddr = proxy;
-                } else {
-                    proxyConfig.serverAddr = domain;
-                }
-            } else {
-                proxyConfig.serverAddr = domain;
-            }
+            proxyConfig.serverAddr = gProxyServerAddr;
             
             address = core.newAddress(proxyConfig.serverAddr);
             address.transport = gTransportType; // linphone.TransportType.Udp;
@@ -628,6 +617,9 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
             // updateStatus('receivedMsg', chatMsg.text);
             console.log(chatMsg.text);
             document.getElementById('chatFrame').contentWindow.makeMessage('receive', chatMsg.text);
+            console.log('>> '+chatMsg.fromAddress.username);
+            txtPhoneNumber.value = chatMsg.fromAddress.username;
+            if(!gIsCahtOpen) fn_chatView(true);
         }
 
         function fn_changeActivity(activity){
@@ -757,6 +749,7 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
         function sipHangUp() {
             var core = getCore();
             var oCall = core.currentCall;
+            fn_chatView(false);
             if( oCall ) {
                 core.terminateCall(oCall);
             }
@@ -919,6 +912,7 @@ console.log('btnVideoOnOf.value : ' + btnVideoOnOf.value);
         }
 
         function fn_chatView( isOpen ) {
+            gIsCahtOpen = isOpen;
             if(isOpen) {
                 divChat.style.opacity = 1;
                 divChat.style.width = '100%';
